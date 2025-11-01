@@ -1,0 +1,33 @@
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+
+# === Virtual environments ===
+.venv/
+env/
+venv/
+ENV/
+.venv*/
+
+# === Environment and config ===
+.env
+config.py
+*.ini
+*.cfg
+*.toml
+
+# === Spotify auth/cache ===
+.cache
+.cache-*
+.spotify_token.json
+
+# === Exports and generated data ===
+exports/
+*.csv
+
+
