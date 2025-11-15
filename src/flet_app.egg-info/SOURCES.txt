@@ -1,0 +1,13 @@
+pyproject.toml
+src/__init__.py
+src/backend/__init__.py
+src/backend/db_manager.py
+src/backend/music_library.py
+src/flet_app.egg-info/PKG-INFO
+src/flet_app.egg-info/SOURCES.txt
+src/flet_app.egg-info/dependency_links.txt
+src/flet_app.egg-info/requires.txt
+src/flet_app.egg-info/top_level.txt
+src/ui/__init__.py
+src/ui/components/__init__.py
+src/ui/components/audio_label.py
