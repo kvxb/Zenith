@@ -6,7 +6,7 @@ from src.backend import PlaylistModel, TrackModel
 from src.ui.ui_mapper import UiMapper
 
 class PlaylistManager:
-	def get_track(self, track_id: str) -> tuple[PlaylistModel, TrackModel] | None:
+	def get_pressed_track(self, track_id: str) -> tuple[PlaylistModel, TrackModel] | None:
 		for playlist in self.playlists:
 			track = playlist.get_track(track_id)
 			if track is not None:
@@ -45,16 +45,6 @@ class PlaylistManager:
 		page.overlay.append(self.audio_manager.audio)
 		page.add(self.playlist_tab_area)
 
-	def play_track_by_id(self, track_id: str):
-		result = self.get_track(track_id)
-		if result is None:
-			return
-		
-		playlist, track = result
-		self.set_active_playlist(playlist.id)
-		playlist.set_active_track(playlist.tracks.index(track))
-		self.audio_manager.play_track(track.file_path)	
-
 	def play_next_track(self):
 		active_playlist = self.get_active_playlist()
 		if active_playlist is None:
@@ -84,11 +74,49 @@ class PlaylistManager:
 			return False
 		return focused_playlist.id != self.active_playlist_id
 
+	def get_focused_playlist(self) -> PlaylistModel | None:
+		playlist_ui = self.playlist_tab_area.get_active_playlist()
+		if playlist_ui is None:
+			return None
+
+		return self.get_playlist(playlist_ui.id)
+
+	def pause_current_playlist(self):
+		active_playlist = self.get_active_playlist()
+		if active_playlist is None:
+			return
+
+		self.audio_manager.pause()
+		active_playlist.pause(self.audio_manager.audio.get_current_position() or 0)
+
 	def on_play(self, id: str):
-		if id is None:
-			self.handle_play_button()
+		if len(self.playlists) == 0:
+			return
+		current_playlist = self.get_active_playlist()
+		focused_playlist = self.get_focused_playlist()
+		next_track = None
+		if focused_playlist is None:
+			return
+
+		if current_playlist is None:
+			current_playlist = focused_playlist
+			self.set_active_playlist(focused_playlist.id)
+  
+		if current_playlist.id != focused_playlist.id:
+			self.pause_current_playlist()
+			self.set_active_playlist(focused_playlist.id)
+			current_playlist = focused_playlist
+		
+		if id is not None:
+			next_track = current_playlist.get_track(id)
 		else:
-			self.play_track_by_id(id)
+			next_track = current_playlist.resume()
+   
+		if next_track is not None:
+			seek = next_track.played_time
+			print(f"Seeking to {seek} seconds")
+			self.audio_manager.play_track(next_track.file_path, seek)
+			
 
 	def event_bindings(self):
 		ui = self.playlist_tab_area
