@@ -7,11 +7,9 @@ class SpotifyAuthenticator:
     Handles Spotify PKCE authentication - NO CLIENT SECRET NEEDED!
     """
     
-    # Class constants
     SCOPE = "playlist-read-private playlist-read-collaborative user-library-read"
     
     def __init__(self, client_id: str, redirect_uri: str):
-        # ONLY these two parameters now - no client_secret!
         self.client_id = client_id
         self.redirect_uri = redirect_uri
         self._spotify_client = None
@@ -28,7 +26,6 @@ class SpotifyAuthenticator:
                 cache_path=".spotify_pkce_cache"
             ))
             
-            # Test authentication
             self._spotify_client.current_user()
             print("✅ Spotify PKCE authentication successful!")
             return self._spotify_client
@@ -37,11 +34,11 @@ class SpotifyAuthenticator:
             print(f"❌ PKCE authentication failed: {e}")
             raise
     
-    def get_client(self) -> spotipy.Spotify:
-        """Returns authenticated client"""
-        if self._spotify_client is None:
-            raise RuntimeError("Not authenticated. Call authenticate() first.")
-        return self._spotify_client
+    # def get_client(self) -> spotipy.Spotify:
+    #     """Returns authenticated client"""
+    #     if self._spotify_client is None:
+    #         raise RuntimeError("Not authenticated. Call authenticate() first.")
+    #     return self._spotify_client
     
     def get_current_user(self) -> dict:
         """Returns current user profile"""
