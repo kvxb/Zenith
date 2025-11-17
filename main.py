@@ -2,28 +2,73 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import flet as ft
-from src.ui import AudioLabel, MusicListItem
+from flet_audio import Audio
+from src.ui.components import Playlist, PlaylistItem, PlaylistTabArea
+from src.ui import UiMapper
+from src.backend import TrackModel, PlaylistModel
+
+random_tracks = [
+    TrackModel(title="One Piece", artist="Eiichiro Oda", album="Shonen Jump", duration=234, file_path="assets/one_piece.mp3"),
+    TrackModel(title="Gorosei Theme", artist="Kohei Tanaka", album="One Piece OST", duration=198, file_path="assets/gorosei.mp3"),
+    TrackModel(title="Luffy's Awakening", artist="Kohei Tanaka", album="Wano Arc", duration=312, file_path="assets/luffy_awakening.mp3"),
+    TrackModel(title="Zoro vs King", artist="Shiro Hamaguchi", album="One Piece Film Red", duration=276, file_path="assets/zoro_king.mp3"),
+    TrackModel(title="Gear 5", artist="Kohei Tanaka", album="Egghead Arc", duration=189, file_path="assets/gear5.mp3"),
+    TrackModel(title="Nika Drums", artist="Shiro Hamaguchi", album="One Piece OST", duration=245, file_path="assets/nika.mp3"),
+    TrackModel(title="Shanks Arrival", artist="Kohei Tanaka", album="Film Red", duration=167, file_path="assets/shanks.mp3"),
+    TrackModel(title="Going Merry", artist="Kohei Tanaka", album="Water 7 Arc", duration=298, file_path="assets/merry.mp3"),
+    TrackModel(title="Overtaken", artist="Kohei Tanaka", album="Enies Lobby", duration=223, file_path="assets/overtaken.mp3"),
+    TrackModel(title="The Very Strongest", artist="Shiro Hamaguchi", album="Marineford", duration=267, file_path="assets/strongest.mp3"),
+    TrackModel(title="Binks Sake", artist="Brook", album="Thriller Bark", duration=178, file_path="assets/binks.mp3"),
+    TrackModel(title="We Are!", artist="Hiroshi Kitadani", album="Opening 1", duration=142, file_path="assets/we_are.mp3"),
+]
+
+# Create test playlists
+playlist1 = PlaylistModel(
+    name="Straw Hat Crew",
+    tracks=[
+        random_tracks[0],  # One Piece
+        random_tracks[4],  # Gear 5
+        random_tracks[10], # Binks Sake
+        random_tracks[11], # We Are!
+    ]
+)
+
+playlist2 = PlaylistModel(
+    name="Epic Battles",
+    tracks=[
+        random_tracks[1],  # Gorosei Theme
+        random_tracks[2],  # Luffy's Awakening
+        random_tracks[3],  # Zoro vs King
+        random_tracks[5],  # Nika Drums
+        random_tracks[9],  # The Very Strongest
+    ]
+)
+
+playlist3 = PlaylistModel(
+    name="Emotional Moments",
+    tracks=[
+        random_tracks[6],  # Shanks Arrival
+        random_tracks[7],  # Going Merry
+        random_tracks[8],  # Overtaken
+    ]
+)
+
+test_playlists = [playlist1, playlist2, playlist3]
 
 
 def main(page: ft.Page):
-    counter = ft.Text("0", size=50, data=0)
     page.title = "Zenith"
     
-    audio_label = MusicListItem(
-        number=0,
-        name="Gorosei theme",
-        author="Oda",
-        album="Mu",
-        duration="3:14",
-        audio_src="gorosei.mp3"
-    )
+    # Create PlaylistTabArea with test playlists
+    tab_area = UiMapper.playlist_tab_area_from_models(test_playlists)
     
     page.add(
-        ft.Column([
-            audio_label,
-        ])
+        ft.Container(
+            content=tab_area,
+            expand=True,
+        )
     )
 
 
 if __name__ == "__main__":
-    ft.app(main, assets_dir="assets")
+    ft.app(main, assets_dir="assets", port=8550)

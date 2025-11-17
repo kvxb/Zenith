@@ -1,0 +1,190 @@
+import flet as ft
+from typing import Optional
+from .playlist_card import PlaylistCard
+from .playlist import Playlist
+
+
+class PlaylistTabArea(ft.Container):
+    def _playlist_search_bar(self):
+        return ft.TextField(
+            hint_text="Search playlists...",
+            prefix_icon=ft.Icons.SEARCH,
+            border=ft.InputBorder.UNDERLINE,
+            border_color=ft.Colors.GREY_400,
+            focused_border_color=ft.Colors.BLUE,
+            filled=True,
+            bgcolor=ft.Colors.TRANSPARENT,
+            expand=True,
+        )
+
+    def _library_label(self):
+        return ft.Row(
+            controls=[
+                ft.TextField(
+                    value="My Library",
+					expand=True),
+                ft.IconButton(
+                    icon=ft.Icons.ADD,
+                    tooltip="Add Playlist",
+                ),
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        )
+
+    def _playlist_card_list_header(self):
+        return ft.Column(
+            controls=[
+                self._library_label(),
+                self._playlist_search_bar(),
+            ]
+        )
+
+    def _playlist_card_list(self):
+        self.playlist_card_list: ft.ReorderableListView = ft.ReorderableListView(
+            expand=True,
+        )
+        return self.playlist_card_list
+
+    def _header(self):
+        self.header = ft.Column(
+            controls=[
+                self._playlist_card_list_header(),
+                self._playlist_card_list(),
+            ],
+        )
+        return self.header
+
+    def _play_button(self):
+        self.play_button: ft.IconButton = ft.IconButton(icon=ft.Icons.PLAY_ARROW)
+        return self.play_button
+
+    def _body_header(self):
+        return ft.Row(
+            controls=[
+                self._play_button(),
+                ft.IconButton(icon=ft.Icons.SHUFFLE),
+                ft.Container(expand=True),
+                ft.IconButton(icon=ft.Icons.UPLOAD_FILE),
+            ],
+            alignment=ft.MainAxisAlignment.START,
+        )
+
+    def _playlist_stack(self):
+        self.playlist_stack: ft.Stack = ft.Stack(expand=True)
+        return self.playlist_stack
+
+    def _body(self):
+        self.body = ft.Column(
+            controls=[
+                self._body_header(),
+                self._playlist_stack(),
+            ]
+        )
+        return self.body
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._active_tab_uuid = ""
+
+        self.header_container = ft.Container(
+            content=self._header(),
+            width=300,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+        )
+
+        self.body_container = ft.Container(
+            content=self._body(),
+            expand=3,
+        )
+
+        self.content = ft.Row(
+            controls=[
+                self.header_container,
+                ft.GestureDetector(
+                    content=ft.VerticalDivider(width=5, color=ft.Colors.GREY_400),
+                    on_pan_update=self._on_divider_drag,
+                    mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+                ),
+                self.body_container,
+            ],
+            expand=True,
+        )
+
+    def did_mount(self):
+        super().did_mount()
+        if self.playlist_card_list.controls:
+            first_control = self.playlist_card_list.controls[0]
+            if isinstance(first_control, PlaylistCard):
+                self.focus(first_control.id)
+
+    def add_playlist(self, playlist_card: PlaylistCard, playlist: Playlist):
+        """Add a card and playlist with matching UUID"""
+        import uuid
+
+        # Generate shared UUID
+        shared_id = str(uuid.uuid4())
+
+        # Assign same ID to both
+        playlist_card.id = shared_id
+        playlist.id = shared_id
+
+        playlist_card.on_click = lambda id: self.focus(id)
+
+        # Add to controls
+        self.playlist_card_list.controls.append(playlist_card)
+        self.playlist_stack.controls.append(playlist)
+
+        # Hide playlist by default (show only when card is clicked)
+        playlist.visible = False
+
+        return shared_id
+
+    def show_playlist(self, playlist_id: str):
+        """Show playlist and hide all others"""
+        for control in self.playlist_stack.controls:
+            if isinstance(control, Playlist):
+                control.visible = control.id == playlist_id
+        self.playlist_stack.update()
+
+    def get_playslist_card(self, uuid: str) -> Optional[PlaylistCard]:
+        for control in self.playlist_card_list.controls:
+            if isinstance(control, PlaylistCard) and control.id == uuid:
+                return control
+        return None
+
+    def get_playlist(self, uuid: str) -> Optional[Playlist]:
+        for control in self.playlist_stack.controls:
+            if isinstance(control, Playlist) and control.id == uuid:
+                return control
+        return None
+
+    def get_active_playlist(self) -> Optional[Playlist]:
+        for control in self.playlist_stack.controls:
+            if isinstance(control, Playlist) and control.id == self._active_tab_uuid:
+                return control
+        return None
+
+    def focus(self, playlist_id: str):
+        print(f"Focus called with playlist_id: {playlist_id}")
+        print(f"Current active: {self._active_tab_uuid}")
+        if self._active_tab_uuid == playlist_id:
+            return
+        self._active_tab_uuid = playlist_id
+        self.show_playlist(playlist_id)
+        print(f"Focus completed for: {playlist_id}")
+
+    def _on_card_click(self, playlist_id: str):
+        if self._active_tab_uuid == playlist_id:
+            return
+        self.focus(playlist_id)
+
+    def _on_divider_drag(self, e: ft.DragUpdateEvent):
+        header_width = self.header_container.width
+
+        if header_width is not None:
+            print(f"Header width before drag: {header_width}")
+            new_width = max(1, header_width + e.delta_x * 1.01)
+
+            self.header_container.width = new_width
+            self.update()
