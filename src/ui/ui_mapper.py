@@ -39,5 +39,4 @@ class UiMapper:
             playlist = UiMapper.playlist_from_model(playlist_model)
             tab_area.add_playlist(card, playlist)
             
-        print(tab_area.playlist_card_list.controls)
         return tab_area

@@ -103,7 +103,7 @@ class PlaylistTabArea(ft.Container):
 		super().__init__(**kwargs)
 
 		self._active_tab_uuid = ""
-		self.on_play = lambda track_id: None
+		self.on_play = lambda id: None
 		self.on_shuffle = lambda new_uuids: None
 		self.on_loop = lambda: None
 
@@ -130,6 +130,7 @@ class PlaylistTabArea(ft.Container):
 			],
 			expand=True,
 		)
+		self.expand = True
 
 	def did_mount(self):
 		super().did_mount()
@@ -140,14 +141,6 @@ class PlaylistTabArea(ft.Container):
 
 	def add_playlist(self, playlist_card: PlaylistCard, playlist: Playlist):
 		"""Add a card and playlist with matching UUID"""
-		import uuid
-
-		# Generate shared UUID
-		shared_id = str(uuid.uuid4())
-
-		# Assign same ID to both
-		playlist_card.id = shared_id
-		playlist.id = shared_id
 
 		playlist_card.on_click = self._on_card_click
 		playlist.on_card_click = self._on_item_click
@@ -158,8 +151,6 @@ class PlaylistTabArea(ft.Container):
 
 		# Hide playlist by default (show only when card is clicked)
 		playlist.visible = False
-
-		return shared_id
 
 	def show_playlist(self, playlist_id: str):
 		"""Show playlist and hide all others"""
@@ -187,13 +178,10 @@ class PlaylistTabArea(ft.Container):
 		return None
 
 	def focus(self, playlist_id: str):
-		print(f"Focus called with playlist_id: {playlist_id}")
-		print(f"Current active: {self._active_tab_uuid}")
 		if self._active_tab_uuid == playlist_id:
 			return
 		self._active_tab_uuid = playlist_id
 		self.show_playlist(playlist_id)
-		print(f"Focus completed for: {playlist_id}")
 
 	def _on_card_click(self, id: str):
 		if self._active_tab_uuid == id:
@@ -204,7 +192,6 @@ class PlaylistTabArea(ft.Container):
 		header_width = self.header_container.width
 
 		if header_width is not None:
-			print(f"Header width before drag: {header_width}")
 			new_width = max(1, header_width + e.delta_x * 1.01)
 
 			self.header_container.width = new_width
@@ -222,4 +209,5 @@ class PlaylistTabArea(ft.Container):
 		self.on_loop()
   
 	def _on_item_click(self, id: str):
+		print(f"Item clicked in tab area: {id}")
 		self.on_play(id)
