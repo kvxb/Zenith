@@ -1,15 +1,14 @@
 import flet as ft
-import uuid
 
 
 class PlaylistCard(ft.Card):
-	def __init__(self, name: str, count: int, duration: int, card_id: str = "", **kwargs):
+	def __init__(self, playlist_id: str, name: str, count: int, duration: int, **kwargs):
 		super().__init__(**kwargs)
-		self.id = card_id if card_id else str(uuid.uuid4())
+		self.id = playlist_id
 		self.name = name
 		self.count = count
 		self.duration = duration
-		self.on_click = lambda id: print(id)  # Placeholder, to be set externally
+		self.on_click = lambda id: print(id)
   
 		self.inner_row = ft.Row(
 				controls=[

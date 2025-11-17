@@ -1,5 +1,4 @@
 import flet as ft
-import uuid
 
 
 class PlaylistItem(ft.Container):
@@ -7,21 +6,23 @@ class PlaylistItem(ft.Container):
 
 	def __init__(
 		self,
+		track_id: str,
 		number: int,
 		name: str,
 		author: str,
 		album: str,
 		duration: str,
-		item_id: str = "",
 		**kwargs,
 	):
 		super().__init__(**kwargs)
-		self.id = item_id if item_id else str(uuid.uuid4())
+		self.id = track_id
 		self.number = number
 		self.name = name
 		self.author = author
 		self.album = album
 		self.duration = duration
+  
+		self.on_card_click = lambda id: print(f"Item clicked {id}")
 
 		name_author_column = self._name_author_column()
 		row_data = ft.Row(
@@ -45,7 +46,8 @@ class PlaylistItem(ft.Container):
 		self.content = ft.GestureDetector(
 			content=row_data,
 			on_enter=self._on_enter_event,
-			on_exit=self._on_exit_event
+			on_exit=self._on_exit_event,
+			on_tap=lambda e: self.on_card_click(self.id)
 		)
 		
 		# Container styling

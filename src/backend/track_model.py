@@ -1,11 +1,14 @@
 
 class TrackModel:
-	def __init__(self, title: str, artist: str, album: str, duration: int, file_path: str):
+	def __init__(self, track_id: str, title: str, artist: str, album: str, duration: int, file_path: str):
+		self.id = track_id
 		self.title = title
 		self.artist = artist
 		self.album = album
 		self.duration = duration  # duration in seconds
 		self.file_path = file_path
+  
+		self.is_looping = False
 
 	def formatted_duration(self) -> str:
 		minutes = self.duration // 60

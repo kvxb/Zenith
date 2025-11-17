@@ -2,28 +2,30 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import flet as ft
+import uuid
 from flet_audio import Audio
 from src.ui.components import Playlist, PlaylistItem, PlaylistTabArea
 from src.ui import UiMapper
 from src.backend import TrackModel, PlaylistModel
 
 random_tracks = [
-    TrackModel(title="One Piece", artist="Eiichiro Oda", album="Shonen Jump", duration=234, file_path="assets/one_piece.mp3"),
-    TrackModel(title="Gorosei Theme", artist="Kohei Tanaka", album="One Piece OST", duration=198, file_path="assets/gorosei.mp3"),
-    TrackModel(title="Luffy's Awakening", artist="Kohei Tanaka", album="Wano Arc", duration=312, file_path="assets/luffy_awakening.mp3"),
-    TrackModel(title="Zoro vs King", artist="Shiro Hamaguchi", album="One Piece Film Red", duration=276, file_path="assets/zoro_king.mp3"),
-    TrackModel(title="Gear 5", artist="Kohei Tanaka", album="Egghead Arc", duration=189, file_path="assets/gear5.mp3"),
-    TrackModel(title="Nika Drums", artist="Shiro Hamaguchi", album="One Piece OST", duration=245, file_path="assets/nika.mp3"),
-    TrackModel(title="Shanks Arrival", artist="Kohei Tanaka", album="Film Red", duration=167, file_path="assets/shanks.mp3"),
-    TrackModel(title="Going Merry", artist="Kohei Tanaka", album="Water 7 Arc", duration=298, file_path="assets/merry.mp3"),
-    TrackModel(title="Overtaken", artist="Kohei Tanaka", album="Enies Lobby", duration=223, file_path="assets/overtaken.mp3"),
-    TrackModel(title="The Very Strongest", artist="Shiro Hamaguchi", album="Marineford", duration=267, file_path="assets/strongest.mp3"),
-    TrackModel(title="Binks Sake", artist="Brook", album="Thriller Bark", duration=178, file_path="assets/binks.mp3"),
-    TrackModel(title="We Are!", artist="Hiroshi Kitadani", album="Opening 1", duration=142, file_path="assets/we_are.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="One Piece", artist="Eiichiro Oda", album="Shonen Jump", duration=234, file_path="assets/one_piece.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Gorosei Theme", artist="Kohei Tanaka", album="One Piece OST", duration=198, file_path="assets/gorosei.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Luffy's Awakening", artist="Kohei Tanaka", album="Wano Arc", duration=312, file_path="assets/luffy_awakening.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Zoro vs King", artist="Shiro Hamaguchi", album="One Piece Film Red", duration=276, file_path="assets/zoro_king.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Gear 5", artist="Kohei Tanaka", album="Egghead Arc", duration=189, file_path="assets/gear5.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Nika Drums", artist="Shiro Hamaguchi", album="One Piece OST", duration=245, file_path="assets/nika.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Shanks Arrival", artist="Kohei Tanaka", album="Film Red", duration=167, file_path="assets/shanks.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Going Merry", artist="Kohei Tanaka", album="Water 7 Arc", duration=298, file_path="assets/merry.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Overtaken", artist="Kohei Tanaka", album="Enies Lobby", duration=223, file_path="assets/overtaken.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="The Very Strongest", artist="Shiro Hamaguchi", album="Marineford", duration=267, file_path="assets/strongest.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="Binks Sake", artist="Brook", album="Thriller Bark", duration=178, file_path="assets/binks.mp3"),
+    TrackModel(track_id=str(uuid.uuid4()), title="We Are!", artist="Hiroshi Kitadani", album="Opening 1", duration=142, file_path="assets/we_are.mp3"),
 ]
 
 # Create test playlists
 playlist1 = PlaylistModel(
+    playlist_id=str(uuid.uuid4()),
     name="Straw Hat Crew",
     tracks=[
         random_tracks[0],  # One Piece
@@ -34,6 +36,7 @@ playlist1 = PlaylistModel(
 )
 
 playlist2 = PlaylistModel(
+    playlist_id=str(uuid.uuid4()),
     name="Epic Battles",
     tracks=[
         random_tracks[1],  # Gorosei Theme
@@ -45,6 +48,7 @@ playlist2 = PlaylistModel(
 )
 
 playlist3 = PlaylistModel(
+    playlist_id=str(uuid.uuid4()),
     name="Emotional Moments",
     tracks=[
         random_tracks[6],  # Shanks Arrival
