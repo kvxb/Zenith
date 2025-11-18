@@ -8,7 +8,7 @@ from src.ui import PlaylistManager
 from src.backend import TrackModel, PlaylistModel
 
 random_tracks = [
-	TrackModel(track_id=str(uuid.uuid4()), title="One Piece", artist="Eiichiro Oda", album="Shonen Jump", duration=234, file_path="gorosei.mp3"),
+	TrackModel(track_id=str(uuid.uuid4()), title="One Piece", artist="Eiichiro Oda", album="Shonen Jump", duration=234, file_path="Saika.mp3"),
 	TrackModel(track_id=str(uuid.uuid4()), title="Gorosei Theme", artist="Kohei Tanaka", album="One Piece OST", duration=198, file_path="gorosei.mp3"),
 	TrackModel(track_id=str(uuid.uuid4()), title="Luffy's Awakening", artist="Kohei Tanaka", album="Wano Arc", duration=312, file_path="gorosei.mp3"),
 	TrackModel(track_id=str(uuid.uuid4()), title="Zoro vs King", artist="Shiro Hamaguchi", album="One Piece Film Red", duration=276, file_path="gorosei.mp3"),
@@ -65,7 +65,7 @@ def main(page: ft.Page):
 	playlist_manager = PlaylistManager(test_playlists)
 	playlist_manager.add_to_page(page)
 	
-	# playlist_manager.audio_manager.audio.resume()
+	# playlist_manager.audio_manager.play_track("Saika.mp3")
 	# # Create PlaylistTabArea with test playlists
 	# tab_area = UiMapper.playlist_tab_area_from_models(test_playlists)
 	

@@ -26,7 +26,7 @@ class UiMapper:
     @staticmethod
     def playlist_from_model(playlist_model: PlaylistModel) -> Playlist:
         playlist = Playlist(playlist_id=playlist_model.id)
-        for index, track in enumerate(playlist_model.tracks):
+        for index, track in enumerate(playlist_model.tracks()):
             item = UiMapper.play_list_item_from_track_model(track, index + 1)
             playlist.append(item)
         return playlist

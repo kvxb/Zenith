@@ -9,6 +9,7 @@ class TrackModel:
 		self.file_path = file_path
   
 		self.is_looping = False
+		self.played_time = 0
 
 	def formatted_duration(self) -> str:
 		minutes = self.duration // 60
