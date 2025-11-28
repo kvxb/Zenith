@@ -1,21 +1,27 @@
-
 class TrackModel:
-	def __init__(self, track_id: str, title: str, artist: str, album: str, duration: int, file_path: str):
-		self.id = track_id
-		self.title = title
-		self.artist = artist
-		self.album = album
-		self.duration = duration  # duration in seconds
-		self.file_path = file_path
-  
-		self.is_looping = False
-		self.played_time = 0
+    def __init__(
+        self,
+        track_id: str,
+        title: str,
+        artist: str,
+        album: str,
+        duration: int,
+        file_path: str,
+    ):
+        self.id = track_id
+        self.title = title
+        self.artist = artist
+        self.album = album
+        self.duration = duration  # duration in seconds
+        self.file_path = file_path
 
-	def formatted_duration(self) -> str:
-		minutes = self.duration // 60
-		seconds = self.duration % 60
-		return f"{minutes}:{seconds:02}"
+        self.is_looping = False
+        self.played_time = 0
 
-	def __repr__(self):
-		return f"TrackModel(title={self.title}, artist={self.artist}, album={self.album}, duration={self.duration}, file_path={self.file_path})"
-  
+    def formatted_duration(self) -> str:
+        minutes = self.duration // 60
+        seconds = self.duration % 60
+        return f"{minutes}:{seconds:02}"
+
+    def __repr__(self):
+        return f"TrackModel(title={self.title}, artist={self.artist}, album={self.album}, duration={self.duration}, file_path={self.file_path})"
