@@ -42,3 +42,9 @@ class Playlist(ft.ReorderableListView):
         element_to_move = self.controls.pop(old_index)
         self.controls.insert(new_index, element_to_move)
         self.update()
+
+    def get_track_item(self, track_id: str) -> PlaylistItem | None:
+        for item in self.controls:
+            if isinstance(item, PlaylistItem) and item.id == track_id:
+                return item
+        return None

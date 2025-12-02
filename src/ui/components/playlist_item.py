@@ -24,10 +24,25 @@ class PlaylistItem(ft.Container):
 
         self.on_card_click = lambda id: print(f"Item clicked {id}")
 
+        self.is_playing = False
+        self.number_text_control = self._number_text()
+        self.playing_icon = ft.Icon(
+            name=ft.Icons.VOLUME_UP_ROUNDED,
+            size=24,
+            color=ft.Colors.CYAN_400,
+            visible=False,
+        )
+
         name_author_column = self._name_author_column()
         row_data = ft.Row(
             controls=[
-                self._number_text(),
+                ft.Stack(
+                    controls=[
+                        self.number_text_control,
+                        self.playing_icon,
+                    ],
+                    width=40,
+                ),
                 ft.Draggable(
                     content=name_author_column,
                     content_feedback=self.content_feedback(),
@@ -96,10 +111,27 @@ class PlaylistItem(ft.Container):
             color=ft.Colors.BLUE_400,
         )
 
-    def _on_enter_event(self, e):
-        self.bgcolor = ft.Colors.BLUE_300
+    def highlight(self, show: bool):
+        """Highlight this item as currently playing"""
+        self.playing_icon.visible = show
+        self.number_text_control.visible = not show
+        if show:
+            self.bgcolor = ft.Colors.CYAN_900
+            self.border = ft.border.all(1, ft.Colors.CYAN_400)
+        else:
+            self.bgcolor = ft.Colors.TRANSPARENT
+            self.border = ft.border.all(0.1, ft.Colors.GREY_400)
         self.update()
 
+    def _on_enter_event(self, e):
+        if not self.playing_icon.visible:
+            self.bgcolor = ft.Colors.BLUE_300
+            self.update()
+
     def _on_exit_event(self, e):
-        self.bgcolor = ft.Colors.TRANSPARENT
-        self.update()
+        if not self.playing_icon.visible:
+            self.bgcolor = ft.Colors.TRANSPARENT
+            self.update()
+        else:
+            self.bgcolor = ft.Colors.CYAN_900
+            self.update()

@@ -38,11 +38,29 @@ class PlaylistCard(ft.Card):
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
+        self.playing_indicator = ft.Icon(
+            name=ft.Icons.MUSIC_NOTE,
+            size=20,
+            color=ft.Colors.CYAN_400,
+            visible=False,
+        )
+        
+        self.inner_row.controls.insert(0, self.playing_indicator)
+        
         self.content = ft.Container(
             content=self.inner_row,
             padding=ft.padding.all(10),
             on_click=lambda e: self.on_click(self.id),
         )
+
+    def highlight(self, show: bool):
+        """Highlight this playlist card"""
+        self.playing_indicator.visible = show
+        if show:
+            self.color = ft.Colors.CYAN_700
+        else:
+            self.color = None
+        self.update()
 
     def format_duration(self) -> str:
         minutes, seconds = divmod(self.duration, 60)

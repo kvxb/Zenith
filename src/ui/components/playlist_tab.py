@@ -3,7 +3,7 @@ from typing import Optional
 from .playlist_card import PlaylistCard
 from .playlist import Playlist
 from .now_playing import NowPlaying
-from src.backend.playlist_model import PlaylistModel
+from src.backend.playlist_model import PlaylistModel, TrackModel
 
 
 class PlaylistTabArea(ft.Container):
@@ -223,24 +223,56 @@ class PlaylistTabArea(ft.Container):
             self.play_button.icon = ft.Icons.PLAY_ARROW
         self.play_button.update()
 
-    def update_ui_on_play(self, active_playlist_model: PlaylistModel, is_playing: bool):
+    def update_ui_on_play(
+        self,
+        previous_playlist_model: PlaylistModel | None,
+        previous_track: TrackModel | None,
+        active_playlist_model: PlaylistModel,
+        is_playing: bool,
+    ):
         self.update_play_button_state(is_playing)
 
-        track = active_playlist_model.get_active_track()
-        if track is None:
+        new_track = active_playlist_model.get_active_track()
+        if new_track is None:
             return
 
         now_playing = self.now_playing
-        active_playlist_ui = self.get_active_playlist()
-        played_playlist_ui = self.get_playlist(active_playlist_model.id)
+        print(f"{previous_playlist_model}")
+        # Clear previous track highlight if it exists
+        if previous_playlist_model is not None and previous_track is not None:
+            last_playlist_ui = self.get_playlist(previous_playlist_model.id)
+
+            if last_playlist_ui is not None:
+                last_track_item = last_playlist_ui.get_track_item(previous_track.id)
+                if last_track_item is not None:
+                    last_track_item.highlight(False)
+
+        # Clear previous playlist card highlight only if switching playlists
+        if (
+            previous_playlist_model is not None
+            and previous_playlist_model.id != active_playlist_model.id
+        ):
+            last_playlist_card = self.get_playslist_card(previous_playlist_model.id)
+            if last_playlist_card is not None:
+                last_playlist_card.highlight(False)
+
+        # Set new playlist highlights if playing
+        if is_playing:
+            active_playlist_card = self.get_playslist_card(active_playlist_model.id)
+            new_playlist_ui = self.get_playlist(active_playlist_model.id)
+
+            if active_playlist_card is not None:
+                active_playlist_card.highlight(True)
+
+            if new_playlist_ui is not None:
+                new_track_item = new_playlist_ui.get_track_item(new_track.id)
+                if new_track_item is not None:
+                    new_track_item.highlight(True)
+
+        if now_playing.current_track != new_track:
+            self.now_playing.load_track_info(new_track)
 
         now_playing.play_pause_btn.icon = (
             ft.Icons.PAUSE_CIRCLE_FILLED if is_playing else ft.Icons.PLAY_CIRCLE_FILLED
         )
         now_playing.play_pause_btn.update()
-
-        if (
-            self.now_playing.current_track is None
-            or self.now_playing.current_track.id != track.id
-        ):
-            self.now_playing.load_track_info(track)

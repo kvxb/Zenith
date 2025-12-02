@@ -43,6 +43,8 @@ class PlaylistManager:
 
         self.audio_manager = AudioManager()
         self.is_playing = False
+        self.last_playlist: PlaylistModel | None = None
+        self.last_track: TrackModel | None = None
         self.event_bindings()
 
     def add_to_page(self, page: ft.Page):
@@ -100,6 +102,8 @@ class PlaylistManager:
             print("No next track to play")
             return
 
+        self.last_playlist = active_playlist
+        self.last_track = track
         self.play()
 
     def play_previous_track(self):
@@ -117,6 +121,8 @@ class PlaylistManager:
             print("No previous track to play")
             return
 
+        self.last_playlist = active_playlist
+        self.last_track = track
         self.play()
 
     def get_focused_playlist(self) -> PlaylistModel | None:
@@ -128,9 +134,15 @@ class PlaylistManager:
 
     def _check_for_playlist_move(self):
         focused_playlist = self.get_focused_playlist()
+        current_playlist = self.get_active_playlist()
 
-        if self.get_active_playlist() != focused_playlist:
+        if current_playlist != focused_playlist:
             self.pause()
+
+            self.last_playlist = current_playlist
+            self.last_track = (
+                current_playlist.get_active_track() if current_playlist else None
+            )
 
             if focused_playlist is not None:
                 self.set_active_playlist(focused_playlist.id)
@@ -151,6 +163,7 @@ class PlaylistManager:
                 self.pause()
             else:
                 current_track = current_playlist.resume()
+
                 self.play()
             return
 
@@ -161,11 +174,9 @@ class PlaylistManager:
                 self.play()
             return
 
+        self.last_track = current_track
         track = current_playlist.set_active_track(id)
         if track is not None:
-            print(
-                f"Playing track: {track.title} from playlist: {current_playlist.name}"
-            )
             self.play()
 
     def on_sound_change(self, e: ft.AudioStateChangeEvent):
@@ -214,7 +225,9 @@ class PlaylistManager:
         active_playlist.pause(self.audio_manager.audio.get_current_position() or 0)
 
         self.is_playing = False
-        self.playlist_tab_area.update_ui_on_play(active_playlist, self.is_playing)
+        self.playlist_tab_area.update_ui_on_play(
+            None, None, active_playlist, self.is_playing
+        )
 
     def play(self):
         current_playlist = self.get_active_playlist()
@@ -222,9 +235,18 @@ class PlaylistManager:
         if current_track is None or current_playlist is None:
             return
 
+        print(
+            f"Playing track: {current_track.title} from playlist: {current_playlist.name}"
+        )
+        previous_playlist = self.last_playlist
+        previous_track = self.last_track
         self.is_playing = True
+        self.last_playlist = current_playlist
+        self.last_track = current_track
 
         seek = current_track.played_time
         self.audio_manager.play_track(current_track.file_path, seek)
 
-        self.playlist_tab_area.update_ui_on_play(current_playlist, self.is_playing)
+        self.playlist_tab_area.update_ui_on_play(
+            previous_playlist, previous_track, current_playlist, self.is_playing
+        )
