@@ -17,6 +17,7 @@ class AudioManager:
 
         self._seek_position = 0
         self.added_to_page = False
+        self.should_play = False
 
     def clear_audio(self):
         self.audio.release()
@@ -25,10 +26,12 @@ class AudioManager:
     def play_track(self, track_url: str, seek: int = 0):
         self._seek_position = seek
 
+        self.should_play = True
+
         if self.audio.src != track_url:
             self.audio.src = track_url
         else:
-            print(f"Resuming audio for {track_url} at {seek} seconds")
+            print(f"Resuming audio for {track_url} at {seek} ms")
             self.audio.seek(seek)
             self.audio.resume()
 
@@ -55,11 +58,10 @@ class AudioManager:
         self.on_sound_change(e)
 
     def _on_loaded(self, e: ft.ControlEvent):
-        self.audio.seek(self._seek_position)
+        if self._seek_position > 0:
+            self.audio.seek(self._seek_position)
 
         if self.added_to_page:
-            print(
-                f"Audio loaded {self.audio.src} playing at {self.audio.get_current_position()} seconds"
-            )
+            print(f"Audio loaded {self.audio.src} seeking to {self._seek_position} ms")
             self.audio.resume()
             self.audio.update()

@@ -2,6 +2,7 @@ import flet as ft
 from typing import Optional
 from .playlist_card import PlaylistCard
 from .playlist import Playlist
+from .now_playing import NowPlaying
 from src.backend.playlist_model import PlaylistModel
 
 
@@ -89,8 +90,10 @@ class PlaylistTabArea(ft.Container):
         return self.playlist_stack
 
     def _body(self):
+        self.now_playing = NowPlaying()
         self.body = ft.Column(
             controls=[
+                self.now_playing,
                 self._body_header(),
                 self._playlist_stack(),
             ]
@@ -223,5 +226,21 @@ class PlaylistTabArea(ft.Container):
     def update_ui_on_play(self, active_playlist_model: PlaylistModel, is_playing: bool):
         self.update_play_button_state(is_playing)
 
+        track = active_playlist_model.get_active_track()
+        if track is None:
+            return
+
+        now_playing = self.now_playing
         active_playlist_ui = self.get_active_playlist()
         played_playlist_ui = self.get_playlist(active_playlist_model.id)
+
+        now_playing.play_pause_btn.icon = (
+            ft.Icons.PAUSE_CIRCLE_FILLED if is_playing else ft.Icons.PLAY_CIRCLE_FILLED
+        )
+        now_playing.play_pause_btn.update()
+
+        if (
+            self.now_playing.current_track is None
+            or self.now_playing.current_track.id != track.id
+        ):
+            self.now_playing.load_track_info(track)

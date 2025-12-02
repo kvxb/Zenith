@@ -62,9 +62,8 @@ class PlaylistModel:
     def move_to_next_track(self) -> TrackModel | None:
         index = self.current_track_index + 1
         if index >= self.size():
-            self.current_track_index = 0
-            if not self.is_looping:
-                return None
+            if self.is_looping:
+                self.current_track_index = 0
         else:
             self.current_track_index = index
 
@@ -73,9 +72,8 @@ class PlaylistModel:
     def move_to_previous_track(self) -> TrackModel | None:
         index = self.current_track_index - 1
         if index < 0:
-            self.current_track_index = self.size() - 1
-            if not self.is_looping:
-                return None
+            if self.is_looping:
+                self.current_track_index = self.size() - 1
         else:
             self.current_track_index = index
 
