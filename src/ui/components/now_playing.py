@@ -128,8 +128,7 @@ class NowPlaying(ft.Container):
 
     def _slider_scrub_end(self, e: ft.ControlEvent):
         value = int(e.control.value)
-        # self.on_slider_end(value)
-        print(f"Slider scrub ended at {value} ms")
+
         self.is_dragging_slider = False
         self.update_playback_position(value)
 
@@ -143,9 +142,6 @@ class NowPlaying(ft.Container):
         if self.current_track is None or self.is_dragging_slider:
             return
 
-        print(
-            f"Updating playback position to {self._format_time(current_time_miliseconds)} ms"
-        )
         self.current_time_text.value = self._format_time(current_time_miliseconds)
         self.position_slider.value = float(current_time_miliseconds)
         self.current_time_text.update()

@@ -57,6 +57,11 @@ class PlaylistTabArea(ft.Container):
 
         element_to_move = target.controls.pop(old_index)
         target.controls.insert(new_index, element_to_move)
+
+        if isinstance(element_to_move, PlaylistCard):
+            # Use a property that belongs to the PlaylistItem control itself
+            element_to_move.on_click = lambda id: self._on_card_click(id)
+
         target.update()
 
     def _header(self):
@@ -105,7 +110,7 @@ class PlaylistTabArea(ft.Container):
 
         self._active_tab_uuid = ""
         self.on_play = lambda id: None
-        self.on_shuffle = lambda new_uuids: None
+        self.on_reorder = lambda id, old_idx, new_idx: None
         self.on_loop = lambda: None
 
         self.header_container = ft.Container(
@@ -141,17 +146,21 @@ class PlaylistTabArea(ft.Container):
                 self.focus(first_control.id)
 
     def add_playlist(self, playlist_card: PlaylistCard, playlist: Playlist):
-        """Add a card and playlist with matching UUID"""
 
         playlist_card.on_click = self._on_card_click
         playlist.on_card_click = self._on_item_click
-
+        playlist.on_reorder_callback = (
+            lambda id, old_idx, new_idx: self._on_reorder_internal(id, old_idx, new_idx)
+        )
         # Add to controls
         self.playlist_card_list.controls.append(playlist_card)
         self.playlist_stack.controls.append(playlist)
 
         # Hide playlist by default (show only when card is clicked)
         playlist.visible = False
+
+    def _on_reorder_internal(self, id: str, old_idx: int | None, new_idx: int | None):
+        self.on_reorder(id, old_idx, new_idx)
 
     def show_playlist(self, playlist_id: str):
         """Show playlist and hide all others"""
@@ -200,11 +209,8 @@ class PlaylistTabArea(ft.Container):
 
     def _on_shuffle(self, e):
         playlist = self.get_active_playlist()
-        print(playlist)
-        if playlist is None:
-            return
-        playlist.shuffle()
-        self.on_shuffle(playlist.get_uuid_list())
+        if playlist is not None:
+            playlist.shuffle()
 
     def _on_loop(self, e):
         self.on_loop()
@@ -237,8 +243,7 @@ class PlaylistTabArea(ft.Container):
             return
 
         now_playing = self.now_playing
-        print(f"{previous_playlist_model}")
-        # Clear previous track highlight if it exists
+
         if previous_playlist_model is not None and previous_track is not None:
             last_playlist_ui = self.get_playlist(previous_playlist_model.id)
 

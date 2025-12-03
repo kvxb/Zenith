@@ -69,6 +69,7 @@ class PlaylistManager:
         # Create new audio manager
         self.audio_manager = AudioManager()
         self.audio_manager.added_to_page = True
+        self.audio_manager.should_play = False
 
         # Clear and re-add to overlay
         self.page.overlay.clear()
@@ -188,12 +189,23 @@ class PlaylistManager:
             print("Track completed, moving to next track")
             self.play_next_track()
 
+    def on_reorder(self, id: str, old_idx: int | None, new_idx: int | None):
+        playlist = self.get_playlist(id)
+        playlist_ui = self.playlist_tab_area.get_playlist(id)
+        if playlist is None or playlist_ui is None:
+            return
+
+        playlist.track_order_list = playlist_ui.get_uuid_list()
+        self.playlist_tab_area.update()
+
     def event_bindings(self):
-        ui = self.playlist_tab_area
-        now_playing = ui.now_playing
+        tab_area = self.playlist_tab_area
+        now_playing = tab_area.now_playing
         audio = self.audio_manager.audio
 
-        ui.on_play = self.on_play
+        tab_area.on_play = self.on_play
+        tab_area.on_reorder = self.on_reorder
+
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
             int(e.position)
@@ -235,9 +247,6 @@ class PlaylistManager:
         if current_track is None or current_playlist is None:
             return
 
-        print(
-            f"Playing track: {current_track.title} from playlist: {current_playlist.name}"
-        )
         previous_playlist = self.last_playlist
         previous_track = self.last_track
         self.is_playing = True

@@ -23,6 +23,7 @@ class PlaylistItem(ft.Container):
         self.duration = duration
 
         self.on_card_click = lambda id: print(f"Item clicked {id}")
+        self.key = track_id
 
         self.is_playing = False
         self.number_text_control = self._number_text()
@@ -131,7 +132,9 @@ class PlaylistItem(ft.Container):
     def _on_exit_event(self, e):
         if not self.playing_icon.visible:
             self.bgcolor = ft.Colors.TRANSPARENT
-            self.update()
+            if self.page:
+                self.update()
         else:
             self.bgcolor = ft.Colors.CYAN_900
-            self.update()
+            if self.page:
+                self.update()
