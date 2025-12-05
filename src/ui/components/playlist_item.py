@@ -113,7 +113,6 @@ class PlaylistItem(ft.Container):
         )
 
     def highlight(self, show: bool):
-        """Highlight this item as currently playing"""
         self.playing_icon.visible = show
         self.number_text_control.visible = not show
         if show:
@@ -122,14 +121,20 @@ class PlaylistItem(ft.Container):
         else:
             self.bgcolor = ft.Colors.TRANSPARENT
             self.border = ft.border.all(0.1, ft.Colors.GREY_400)
-        self.update()
+
+        print(f"Updating playlist item highlight {show}")
+        # if self.page:
 
     def _on_enter_event(self, e):
+        return
         if not self.playing_icon.visible:
             self.bgcolor = ft.Colors.BLUE_300
-            self.update()
+
+            if self.page:
+                self.update()
 
     def _on_exit_event(self, e):
+        return
         if not self.playing_icon.visible:
             self.bgcolor = ft.Colors.TRANSPARENT
             if self.page:

@@ -274,6 +274,9 @@ class PlaylistTabArea(ft.Container):
                 if new_track_item is not None:
                     new_track_item.highlight(True)
 
+        # Update the entire playlist UI once after all highlights are set
+        self.playlist_stack.update()
+
         if now_playing.current_track != new_track:
             self.now_playing.load_track_info(new_track)
 

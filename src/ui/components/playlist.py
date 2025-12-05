@@ -41,15 +41,14 @@ class Playlist(ft.ReorderableListView):
         old_index = e.old_index or 0
         new_index = e.new_index or 0
         print(f"Reordering from {old_index} to {new_index}")
-        element_to_move = self.controls[old_index]
-        self.controls.insert(new_index, self.controls.pop(old_index))
+        element_to_move = self.controls.pop(old_index)
+        self.controls.insert(new_index, element_to_move)
 
         if isinstance(element_to_move, PlaylistItem):
-            # Use a property that belongs to the PlaylistItem control itself
             element_to_move.on_card_click = lambda id: self.on_card_click(id)
 
+        self.update()
         self.on_reorder_callback(self.id, old_index, new_index)
-        # self.update()
 
     def get_track_item(self, track_id: str) -> PlaylistItem | None:
         for item in self.controls:
