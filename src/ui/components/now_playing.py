@@ -142,10 +142,19 @@ class NowPlaying(ft.Container):
         if self.current_track is None or self.is_dragging_slider:
             return
 
+        # Prevent updates if page is no longer available
+        if not self.page:
+            return
+
         self.current_time_text.value = self._format_time(current_time_miliseconds)
         self.position_slider.value = float(current_time_miliseconds)
-        self.current_time_text.update()
-        self.position_slider.update()
+
+        try:
+            self.current_time_text.update()
+            self.position_slider.update()
+        except:
+            # Ignore errors if page is shutting down
+            pass
 
     def load_track_info(self, track: TrackModel):
         self.current_track = track

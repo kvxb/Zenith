@@ -61,7 +61,7 @@ class AudioManager:
         if self._seek_position > 0:
             self.audio.seek(self._seek_position)
 
-        if self.added_to_page:
+        if self.added_to_page and self.should_play:
             print(f"Audio loaded {self.audio.src} seeking to {self._seek_position} ms")
             self.audio.resume()
             self.audio.update()

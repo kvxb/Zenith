@@ -44,14 +44,17 @@ class PlaylistCard(ft.Card):
             color=ft.Colors.CYAN_400,
             visible=False,
         )
-        
+
         self.inner_row.controls.insert(0, self.playing_indicator)
-        
+
         self.content = ft.Container(
             content=self.inner_row,
             padding=ft.padding.all(10),
             on_click=lambda e: self.on_click(self.id),
         )
+
+        # Set default border
+        self.margin = ft.margin.all(5)
 
     def highlight(self, show: bool):
         """Highlight this playlist card"""

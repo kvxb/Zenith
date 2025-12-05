@@ -143,26 +143,21 @@ playlist3 = PlaylistModel(
 
 test_playlists = [playlist1, playlist2, playlist3]
 
-# Persist playlist manager across page refreshes
-_playlist_manager = None
+
+def on_event(e: ft.WindowEvent, page: ft.Page):
+    if e.type == ft.WindowEventType.CLOSE:
+        print("Application is closing.")
+        page.window.destroy()
 
 
 def main(page: ft.Page):
-    global _playlist_manager
-
     page.title = "Zenith"
 
-    if _playlist_manager is None:
-        # First time - create new instance
-        print("Creating new PlaylistManager...")
-        _playlist_manager = PlaylistManager(test_playlists)
-        _playlist_manager.add_to_page(page)
-    else:
-        # On refresh - reconnect with new page
-        print("Reconnecting PlaylistManager to new page...")
-        _playlist_manager.page = page
-        page.add(_playlist_manager.playlist_tab_area)
-        _playlist_manager.reconnect()
+    page.window.prevent_close = True
+    page.window.on_event = lambda e: on_event(e, page)
+
+    playlist_manager = PlaylistManager(test_playlists)
+    playlist_manager.add_to_page(page)
 
 
 if __name__ == "__main__":

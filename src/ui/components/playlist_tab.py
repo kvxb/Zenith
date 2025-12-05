@@ -16,6 +16,7 @@ class PlaylistTabArea(ft.Container):
             focused_border_color=ft.Colors.BLUE,
             filled=True,
             bgcolor=ft.Colors.TRANSPARENT,
+            on_submit=lambda e: self.on_search(e.control.value),
             expand=True,
         )
 
@@ -48,18 +49,15 @@ class PlaylistTabArea(ft.Container):
         return self.playlist_card_list
 
     def _on_playlist_card_reorder(self, e: ft.OnReorderEvent):
-        old_index = e.old_index
-        new_index = e.new_index
+        old_index = e.old_index or 0
+        new_index = e.new_index or 0
         target = self.playlist_card_list
 
-        if old_index is None or new_index is None:
-            return
-
+        print(f"Reordering playlist cards from {old_index} to {new_index}")
         element_to_move = target.controls.pop(old_index)
         target.controls.insert(new_index, element_to_move)
 
         if isinstance(element_to_move, PlaylistCard):
-            # Use a property that belongs to the PlaylistItem control itself
             element_to_move.on_click = lambda id: self._on_card_click(id)
 
         target.update()
@@ -112,6 +110,7 @@ class PlaylistTabArea(ft.Container):
         self.on_play = lambda id: None
         self.on_reorder = lambda id, old_idx, new_idx: None
         self.on_loop = lambda: None
+        self.on_search = lambda query: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -190,8 +189,27 @@ class PlaylistTabArea(ft.Container):
     def focus(self, playlist_id: str):
         if self._active_tab_uuid == playlist_id:
             return
+
+        # Remove highlight from previous active card
+        if self._active_tab_uuid:
+            previous_card = self.get_playslist_card(self._active_tab_uuid)
+            if previous_card is not None:
+                previous_card.margin = ft.margin.all(5)
+                previous_card.shadow_color = None
+                previous_card.elevation = 1
+                previous_card.update()
+
         self._active_tab_uuid = playlist_id
         self.show_playlist(playlist_id)
+
+        # Add subtle highlight to new active card
+        active_card = self.get_playslist_card(playlist_id)
+        if active_card is not None:
+            print(f"Adding highlight to active card {playlist_id}")
+            active_card.margin = ft.margin.all(2)
+            active_card.shadow_color = ft.Colors.CYAN_400
+            active_card.elevation = 16
+            active_card.update()
 
     def _on_card_click(self, id: str):
         if self._active_tab_uuid == id:

@@ -66,6 +66,13 @@ class PlaylistManager:
     def reconnect(self):
         print("Reconnecting - recreating audio manager")
 
+        # Store the current playlist before stopping
+        active_playlist = self.get_active_playlist()
+
+        # Stop playback and update state
+        if self.is_playing:
+            self.is_playing = False
+
         # Create new audio manager
         self.audio_manager = AudioManager()
         self.audio_manager.added_to_page = True
@@ -77,6 +84,12 @@ class PlaylistManager:
 
         # Rebind all events
         self.event_bindings()
+
+        # Update UI to reflect stopped state
+        if active_playlist is not None:
+            self.playlist_tab_area.update_ui_on_play(
+                None, None, active_playlist, self.is_playing
+            )
 
         # Update the page
         self.page.update()
@@ -205,6 +218,7 @@ class PlaylistManager:
 
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
+        tab_area.on_search = lambda query: print(f"Search query: {query}")
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
