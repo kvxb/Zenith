@@ -5,7 +5,7 @@ from .db_manager import SimpleMusicDB
 
 
 class SimpleDownloader:
-    def __init__(self, db: SimpleMusicDB, download_dir: str = "downloads"):
+    def __init__(self, db: SimpleMusicDB, download_dir: str = "./src/assets"):
         """
         Simple YouTube downloader.
 
@@ -92,12 +92,16 @@ class SimpleDownloader:
         file_path = self._search_and_download(title, artist)
 
         if file_path:
-            # Update database with file path
+            # Store ONLY the filename in the database, not the full path
+            file_name = Path(file_path).name  # Extract just the filename
+            
             cursor.execute(
-                "UPDATE tracks SET path_mp3 = ? WHERE id = ?", (file_path, track_id)
+                "UPDATE tracks SET path_mp3 = ? WHERE id = ?", 
+                (file_name, track_id)  # Store only filename!
             )
             self.db._get_connection().commit()
             print(f"✓ Downloaded: {artist} - {title}")
+            print(f"  Filename stored: {file_name}")
             return True
         else:
             print(f"✗ Failed to download: {artist} - {title}")
