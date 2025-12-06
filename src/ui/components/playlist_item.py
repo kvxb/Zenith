@@ -2,104 +2,189 @@ import flet as ft
 
 
 class PlaylistItem(ft.Container):
-	"""Music list item with number, name, author, album and timestamp"""
+    """Music list item with number, name, author, album and timestamp"""
 
-	def __init__(
-		self,
-		track_id: str,
-		number: int,
-		name: str,
-		author: str,
-		album: str,
-		duration: str,
-		**kwargs,
-	):
-		super().__init__(**kwargs)
-		self.id = track_id
-		self.number = number
-		self.name = name
-		self.author = author
-		self.album = album
-		self.duration = duration
-  
-		self.on_card_click = lambda id: print(f"Item clicked {id}")
+    def __init__(
+        self,
+        track_id: str,
+        number: int,
+        name: str,
+        author: str,
+        album: str,
+        duration: str,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.id = track_id
+        self.number = number
+        self.name = name
+        self.author = author
+        self.album = album
+        self.duration = duration
 
-		name_author_column = self._name_author_column()
-		row_data = ft.Row(
-			controls=[
-				self._number_text(),
-				ft.Draggable(
-					content=name_author_column,
-					content_feedback=self.content_feedback(),
-					content_when_dragging=ft.Container(
-						content=name_author_column,
-						opacity=0.3,
-					),
-				),
-				ft.Container(
-					expand=True,
-				),
-				self._album_text(),
-				self._duration_text(),
-			],
-		)
-		self.content = ft.GestureDetector(
-			content=row_data,
-			on_enter=self._on_enter_event,
-			on_exit=self._on_exit_event,
-			on_tap=lambda e: self.on_card_click(self.id)
-		)
-		
-		# Container styling
-		self.padding = ft.padding.all(10)
-		self.margin = ft.margin.only(bottom=10)
-		self.border = ft.border.all(0.1, ft.Colors.GREY_400)
-		self.border_radius = 5
-		self.bgcolor = ft.Colors.TRANSPARENT
-		self.ink = True	
+        self.on_card_click = lambda track_id: print(f"Item clicked {track_id}")
+        self.on_delete = lambda track_id: print(f"Delete track {track_id}")
+        self.on_copy = lambda track_id: print(f"Copy track {track_id}")
+        self.key = track_id
 
-	def _number_text(self):
-		return ft.Text(str(self.number), size=18, width=40, color=ft.Colors.GREY_600)
+        self.is_playing = False
+        self.number_text_control = self._number_text()
+        self.playing_icon = ft.Icon(
+            name=ft.Icons.VOLUME_UP_ROUNDED,
+            size=24,
+            color=ft.Colors.CYAN_400,
+            visible=False,
+        )
 
-	def _name_author_column(self) -> ft.Column:
-		return ft.Column(
-			[
-				ft.Text(
-					self.name,
-					size=20,
-					weight=ft.FontWeight.BOLD,
-					overflow=ft.TextOverflow.ELLIPSIS,
-					max_lines=1,
-				),
-				ft.Text(
-					self.author,
-					size=20,
-					color=ft.Colors.GREY_600,
-					overflow=ft.TextOverflow.ELLIPSIS,
-					max_lines=1,
-				),
-			],
-			spacing=2,
-			expand=True,
-		)
+        name_author_column = self._name_author_column()
 
-	def _album_text(self):
-		return ft.Text(self.album, size=18, color=ft.Colors.GREY_700, width=150)
+        self.menu_button = ft.PopupMenuButton(
+            items=[
+                ft.PopupMenuItem(
+                    text="Copy Track",
+                    icon=ft.Icons.CONTENT_COPY,
+                    on_click=lambda e: self.on_copy(self.id),
+                ),
+                ft.PopupMenuItem(),  # Divider
+                ft.PopupMenuItem(
+                    text="Delete from Playlist",
+                    icon=ft.Icons.DELETE,
+                    on_click=lambda e: self.on_delete(self.id),
+                ),
+            ],
+            icon=ft.Icons.MORE_VERT,
+            icon_color=ft.Colors.TRANSPARENT,
+        )
 
-	def _duration_text(self):
-		return ft.Text(self.duration, size=18, color=ft.Colors.GREY_600, width=60)
+        row_data = ft.Row(
+            controls=[
+                ft.Stack(
+                    controls=[
+                        self.number_text_control,
+                        self.playing_icon,
+                    ],
+                    width=40,
+                ),
+                ft.Container(
+                    content=ft.Draggable(
+                        group="playlist_tracks",
+                        content=name_author_column,
+                        content_feedback=self.content_feedback(),
+                        content_when_dragging=ft.Container(
+                            content=name_author_column,
+                            opacity=0.3,
+                        ),
+                        data=track_id,
+                    ),
+                    expand=True,
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                ),
+                self._album_text(),
+                self._duration_text(),
+                ft.Container(width=20),  # Right margin for menu button space
+            ],
+            spacing=10,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
 
-	def content_feedback(self):
-		return ft.Icon(
-			name=ft.Icons.DRAG_INDICATOR,
-			size=30,
-			color=ft.Colors.BLUE_400,
-		)
+        self.content = ft.Stack(
+            controls=[
+                ft.GestureDetector(
+                    content=row_data,
+                    on_enter=self._on_enter_event,
+                    on_exit=self._on_exit_event,
+                    on_tap=lambda e: self.on_card_click(self.id),
+                ),
+                ft.Container(
+                    content=ft.GestureDetector(
+                        content=self.menu_button,
+                        on_enter=self._on_enter_event,
+                        on_exit=self._on_exit_event,
+                    ),
+                    right=10,
+                    top=0,
+                    bottom=0,
+                    alignment=ft.alignment.center,
+                ),
+            ],
+            expand=True,
+        )
 
-	def _on_enter_event(self, e):
-		self.bgcolor = ft.Colors.BLUE_300
-		self.update()
-	def _on_exit_event(self, e):
-		self.bgcolor = ft.Colors.TRANSPARENT
-		self.update()
-  
+        # Container styling
+        self.padding = ft.padding.all(10)
+        self.margin = ft.margin.only(bottom=10)
+        self.border = ft.border.all(0.1, ft.Colors.GREY_400)
+        self.border_radius = 5
+        self.bgcolor = ft.Colors.TRANSPARENT
+        self.ink = True
+
+    def _number_text(self):
+        return ft.Text(str(self.number), size=18, width=40, color=ft.Colors.GREY_600)
+
+    def _name_author_column(self) -> ft.Column:
+        return ft.Column(
+            [
+                ft.Text(
+                    self.name,
+                    size=20,
+                    weight=ft.FontWeight.BOLD,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                    max_lines=1,
+                ),
+                ft.Text(
+                    self.author,
+                    size=20,
+                    color=ft.Colors.GREY_600,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                    max_lines=1,
+                ),
+            ],
+            spacing=2,
+            expand=True,
+        )
+
+    def _album_text(self):
+        return ft.Text(
+            self.album,
+            size=18,
+            color=ft.Colors.GREY_700,
+            width=150,
+            overflow=ft.TextOverflow.ELLIPSIS,
+            no_wrap=True,
+        )
+
+    def _duration_text(self):
+        return ft.Text(
+            self.duration,
+            size=18,
+            color=ft.Colors.GREY_600,
+            width=60,
+            no_wrap=True,
+        )
+
+    def content_feedback(self):
+        return ft.Icon(
+            name=ft.Icons.DRAG_INDICATOR,
+            size=30,
+            color=ft.Colors.BLUE_400,
+        )
+
+    def highlight(self, show: bool):
+        self.playing_icon.visible = show
+        self.number_text_control.visible = not show
+        if show:
+            self.bgcolor = ft.Colors.CYAN_900
+            self.border = ft.border.all(1, ft.Colors.CYAN_400)
+        else:
+            self.bgcolor = ft.Colors.TRANSPARENT
+            self.border = ft.border.all(0.1, ft.Colors.GREY_400)
+
+        print(f"Updating playlist item highlight {show}")
+
+    def _on_enter_event(self, e):
+        self.menu_button.icon_color = ft.Colors.WHITE
+        self.menu_button.update()
+
+    def _on_exit_event(self, e):
+        self.menu_button.icon_color = ft.Colors.TRANSPARENT
+        self.menu_button.update()

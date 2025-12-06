@@ -32,11 +32,13 @@ class UiMapper:
         return playlist
 
     @staticmethod
-    def playlist_tab_area_from_models(playlists: list[PlaylistModel]) -> PlaylistTabArea:
+    def playlist_tab_area_from_models(
+        playlists: list[PlaylistModel],
+    ) -> PlaylistTabArea:
         tab_area = PlaylistTabArea()
         for playlist_model in playlists:
             card = UiMapper.playlist_card_from_model(playlist_model)
             playlist = UiMapper.playlist_from_model(playlist_model)
             tab_area.add_playlist(card, playlist)
-            
+
         return tab_area
