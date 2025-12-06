@@ -24,6 +24,17 @@ class PlaylistStateManager:
 
     def set_active_playlist(self, playlist_id: str):
         """Set the active playlist"""
+        if self.playlists is None:
+            return None
+
+        if playlist_id == "first" and len(self.playlists) > 0:
+            self.active_playlist_id = self.playlists[0].id
+            return self.get_active_playlist()
+
+        if playlist_id == "last" and len(self.playlists) > 0:
+            self.active_playlist_id = self.playlists[-1].id
+            return self.get_active_playlist()
+
         self.active_playlist_id = playlist_id
         return self.get_active_playlist()
 
@@ -94,10 +105,13 @@ class PlaylistStateManager:
         source = self.get_track_from_playlists(track_id)
         target_playlist = self.get_playlist(target_playlist_id)
 
-        if source is None or target_playlist is None:
+        if source is None:
             return False
 
         source_playlist, track = source
+        if target_playlist is None:
+            source_playlist.remove_track(track)
+            return True
 
         if source_playlist.id == target_playlist.id:
             return False
@@ -105,3 +119,11 @@ class PlaylistStateManager:
         source_playlist.remove_track(track)
         target_playlist.add_track(track)
         return True
+
+    def add_playlist(self, playlist: PlaylistModel):
+        """Add a new playlist to the manager"""
+        self.playlists.append(playlist)
+
+    def remove_playlist(self, playlist_id: str):
+        """Remove a playlist from the manager by ID"""
+        self.playlists = [pl for pl in self.playlists if pl.id != playlist_id]

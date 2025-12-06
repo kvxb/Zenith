@@ -247,15 +247,10 @@ class PlaylistManager:
         playlist, track = track_info
 
         if self.state_manager.get_active_track() == track:
-            self.pause()
             if playlist.move_to_next_track() == track:
                 playlist.set_active_track("first")
 
-            self.state_manager.update_last_state(None, None)
-            self.tab_area.now_playing.toggle_show_hide(False)
-            card_ui = self.tab_area.get_playslist_card(playlist_id)
-            if card_ui is not None:
-                card_ui.highlight(False)
+            self.forget()
 
         playlist.remove_track(track)
         playlist_ui = self.tab_area.get_playlist(playlist_id)
@@ -329,3 +324,34 @@ class PlaylistManager:
     def on_search(self, query: str):
         """Handle search queries"""
         result = self.state_manager.get_track_of_name(query)
+
+    def forget(self):
+        """Clear playback state and hide now playing UI"""
+        if self.playback_controller.is_playing:
+            self.pause(update_ui=False)
+
+        self.state_manager.update_last_state(None, None)
+        self.tab_area.now_playing.toggle_show_hide(False)
+
+        # Unhighlight all playlist cards
+        for playlist in self.state_manager.playlists:
+            card_ui = self.tab_area.get_playslist_card(playlist.id)
+            if card_ui is not None:
+                card_ui.highlight(False)
+
+    def remove_playlist(self, playlist_id: str):
+        """Remove a playlist from the manager"""
+        playlist = self.state_manager.get_playlist(playlist_id)
+        if playlist is None:
+            print(f"Playlist {playlist_id} not found")
+            return
+
+        tab_area = self.tab_area
+        focused_playlist = tab_area.get_active_playlist()
+        active_playlist = self.state_manager.get_active_playlist()
+
+        if active_playlist == playlist:
+            self.forget()
+
+        if focused_playlist == playlist:
+            tab_area.remove_playlist(playlist_id)

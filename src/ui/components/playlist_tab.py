@@ -162,6 +162,20 @@ class PlaylistTabArea(ft.Container):
         # Hide playlist by default (show only when card is clicked)
         playlist.visible = False
 
+    def remove_playlist(self, playlist_id: str):
+        card_ui = self.get_playslist_card(playlist_id)
+        playlist_ui = self.get_playlist(playlist_id)
+
+        if card_ui is not None:
+            self.playlist_card_list.controls.remove(card_ui)
+        if playlist_ui is not None:
+            self.playlist_stack.controls.remove(playlist_ui)
+
+        if playlist_id == self._active_tab_uuid:
+            self.focus("first")
+
+        self.update()
+
     def _on_reorder_internal(self, id: str, old_idx: int | None, new_idx: int | None):
         self.on_reorder(id, old_idx, new_idx)
 
@@ -191,8 +205,21 @@ class PlaylistTabArea(ft.Container):
         return None
 
     def focus(self, playlist_id: str):
-        if self._active_tab_uuid == playlist_id:
+        if self.is_empty() or self._active_tab_uuid == playlist_id:
             return
+
+        if playlist_id == "first":
+            first_control = self.playlist_card_list.controls[0]
+            if isinstance(first_control, PlaylistCard):
+                self.focus(first_control.id)
+            else:
+                return
+        elif playlist_id == "last":
+            last_control = self.playlist_card_list.controls[-1]
+            if isinstance(last_control, PlaylistCard):
+                self.focus(last_control.id)
+            else:
+                return
 
         # Remove highlight from previous active card
         if self._active_tab_uuid:
@@ -250,6 +277,9 @@ class PlaylistTabArea(ft.Container):
         else:
             self.play_button.icon = ft.Icons.PLAY_ARROW
         self.play_button.update()
+
+    def is_empty(self) -> bool:
+        return len(self.playlist_stack.controls) == 0
 
     def update_ui_on_play(
         self,

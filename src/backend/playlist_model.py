@@ -15,6 +15,8 @@ class PlaylistModel:
         return self.track_dict.get(track_id)
 
     def add_track(self, track: TrackModel):
+        if track.id in self.track_dict:
+            return
         self.track_dict[track.id] = track
         self.track_order_list.append(track.id)
 
