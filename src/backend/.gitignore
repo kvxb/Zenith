@@ -5,6 +5,5 @@ __pycache__/
 venv/
 playlists_songs.db
 downloads/
-test_download.*
 *.mp3
 *.webm

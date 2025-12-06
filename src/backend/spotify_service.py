@@ -10,6 +10,7 @@ class SpotifyService:
 
     SCOPE = "playlist-read-private playlist-read-collaborative user-library-read"
     
+
     def __init__(self, client_id: str, redirect_uri: str, db: SimpleMusicDB):
         self.client_id = client_id
         self.redirect_uri = redirect_uri

@@ -16,6 +16,7 @@ class SimpleMusicDB:
                 title TEXT NOT NULL,
                 artist TEXT NOT NULL,
                 duration INTEGER,
+                album TEXT,
                 icon TEXT,
                 path_mp3 TEXT,
                 reference_count INT DEFAULT 1
@@ -85,17 +86,20 @@ class SimpleMusicDB:
         self.conn.commit()
 
     # the main operation done after the user chooses his playlists
-    def add_track_to_playlist(self, playlist_id, title, artist, duration, icon):
+    def add_track_to_playlist(self, playlist_id, title, artist, album, duration, icon):
         cursor = self.conn.cursor()
 
+        # Check if track already exists in database (including album)
         cursor.execute(
-            "SELECT id FROM tracks WHERE title = ? AND artist = ?", (title, artist)
+            "SELECT id FROM tracks WHERE title = ? AND artist = ? AND album = ?",
+            (title, artist, album)
         )
         existing_track = cursor.fetchone()
 
         if existing_track:
             track_id = existing_track[0]
 
+            # Check if track is already in this specific playlist
             cursor.execute(
                 "SELECT 1 FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
                 (playlist_id, track_id),
@@ -103,18 +107,21 @@ class SimpleMusicDB:
             if cursor.fetchone():
                 print(f"Track '{title}' by '{artist}' is already in playlist")
                 return track_id
-            else:
-                cursor.execute(
-                    "INSERT INTO tracks (title, artist, duration, icon, reference_count) VALUES (?, ?, ?, ?, ?)",
-                    (title, artist, duration, icon, 1),
-                )
-                track_id = cursor.lastrowid
+        else:
+            # Create new track record (including album)
+            cursor.execute(
+                "INSERT INTO tracks (title, artist, album, duration, icon, reference_count) VALUES (?, ?, ?, ?, ?, ?)",
+                (title, artist, album, duration, icon, 1),
+            )
+            track_id = cursor.lastrowid
 
+        # Add track to the playlist junction table
         cursor.execute(
             "INSERT INTO playlist_tracks (playlist_id, track_id) VALUES (?, ?)",
             (playlist_id, track_id),
         )
 
+        # Update playlist statistics
         cursor.execute(
             "UPDATE playlists SET song_count = song_count + 1 WHERE id = ?",
             (playlist_id,),
