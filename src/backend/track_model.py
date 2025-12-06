@@ -7,6 +7,7 @@ class TrackModel:
         album: str,
         duration: int,
         file_path: str,
+        image_path: str = "",
         is_copy: bool = False,
     ):
         self.id = track_id
@@ -15,6 +16,7 @@ class TrackModel:
         self.album = album
         self.duration = duration  # duration in seconds
         self.file_path = file_path
+        self.image_path = image_path
         self.is_copy = is_copy
 
         self.is_looping = False
@@ -25,5 +27,5 @@ class TrackModel:
         seconds = self.duration % 60
         return f"{minutes}:{seconds:02}"
 
-	def __repr__(self):
-		return f"TrackModel(title={self.title}, artist={self.artist}, album={self.album}, duration={self.duration}, file_path={self.file_path})"
+    def __repr__(self):
+        return f"TrackModel(title={self.title}, artist={self.artist}, album={self.album}, duration={self.duration}, file_path={self.file_path})"
