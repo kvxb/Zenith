@@ -189,6 +189,12 @@ class PlaylistManager:
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
         tab_area.on_drop = self.on_track_drop
+        tab_area.on_focus_change = (
+            lambda playlist_id: self.tab_area.update_play_button_state(
+                playlist_id == self.state_manager.active_playlist_id
+                and self.playback_controller.is_playing
+            )
+        )
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(

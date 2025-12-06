@@ -112,6 +112,7 @@ class PlaylistTabArea(ft.Container):
         self.on_loop = lambda: None
         self.on_search = lambda query: None
         self.on_drop = lambda playlist_id, track_id: None
+        self.on_focus_change = lambda playlist_id: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -242,6 +243,9 @@ class PlaylistTabArea(ft.Container):
             active_card.elevation = 16
             active_card.update()
 
+        # Notify that focus has changed
+        self.on_focus_change(playlist_id)
+
     def _on_card_click(self, id: str):
         if self._active_tab_uuid == id:
             return
@@ -288,7 +292,8 @@ class PlaylistTabArea(ft.Container):
         active_playlist_model: PlaylistModel,
         is_playing: bool,
     ):
-        self.update_play_button_state(is_playing)
+        if active_playlist_model.id == self._active_tab_uuid:
+            self.update_play_button_state(is_playing)
 
         new_track = active_playlist_model.get_active_track()
         if new_track is None:
