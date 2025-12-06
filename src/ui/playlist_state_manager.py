@@ -75,6 +75,20 @@ class PlaylistStateManager:
                     return (playlist, track)
         return None
 
+    def get_plalist_track_tuple(
+        self, playlist_id: str, track_id: str
+    ) -> Optional[tuple[PlaylistModel, TrackModel]]:
+        """Get a (playlist, track) tuple by their IDs"""
+        playlist = self.get_playlist(playlist_id)
+        if playlist is None:
+            return None
+
+        track = playlist.get_track(track_id)
+        if track is None:
+            return None
+
+        return (playlist, track)
+
     def move_track_to_playlist(self, track_id: str, target_playlist_id: str) -> bool:
         """Move a track to a different playlist"""
         source = self.get_track_from_playlists(track_id)

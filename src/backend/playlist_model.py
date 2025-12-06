@@ -21,6 +21,9 @@ class PlaylistModel:
     def remove_track(self, track: TrackModel):
         self.track_dict.pop(track.id, None)
 
+        if track.id == self.current_track_id:
+            self.current_track_id = None
+
         if track.id in self.track_order_list:
             self.track_order_list.remove(track.id)
 

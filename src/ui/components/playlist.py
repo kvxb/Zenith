@@ -55,3 +55,33 @@ class Playlist(ft.ReorderableListView):
             if isinstance(item, PlaylistItem) and item.id == track_id:
                 return item
         return None
+
+    def get_track_items(self):
+        for item in self.controls:
+            if isinstance(item, PlaylistItem):
+                yield item
+
+    def remove_track_item(self, track_id: str):
+        """Remove a track item and renumber all remaining items"""
+        control: PlaylistItem
+        for i, item in enumerate(self.get_track_items()):
+            if item.id == track_id:
+                self.controls.pop(i)
+                break
+
+        # Renumber all items
+        self.renumber_all_items()
+        self.update()
+
+    def add_track_item(self, item: PlaylistItem):
+        """Add a track item and renumber all items"""
+        self.append(item)
+        self.renumber_all_items()
+        self.update()
+
+    def renumber_all_items(self):
+        """Update the number on all PlaylistItems"""
+        for i, control in enumerate(self.controls):
+            if isinstance(control, PlaylistItem):
+                control.number = i + 1
+                control.number_text_control.value = str(i + 1)

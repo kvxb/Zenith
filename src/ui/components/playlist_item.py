@@ -45,12 +45,14 @@ class PlaylistItem(ft.Container):
                     width=40,
                 ),
                 ft.Draggable(
+                    group="playlist_tracks",
                     content=name_author_column,
                     content_feedback=self.content_feedback(),
                     content_when_dragging=ft.Container(
                         content=name_author_column,
                         opacity=0.3,
                     ),
+                    data=track_id,
                 ),
                 ft.Container(
                     expand=True,

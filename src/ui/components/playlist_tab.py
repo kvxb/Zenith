@@ -111,6 +111,7 @@ class PlaylistTabArea(ft.Container):
         self.on_reorder = lambda id, old_idx, new_idx: None
         self.on_loop = lambda: None
         self.on_search = lambda query: None
+        self.on_drop = lambda playlist_id, track_id: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -148,6 +149,9 @@ class PlaylistTabArea(ft.Container):
 
         playlist_card.on_click = self._on_card_click
         playlist.on_card_click = self._on_item_click
+        playlist_card.on_drop = lambda track_id: self.on_drop(
+            playlist_card.id, track_id
+        )
         playlist.on_reorder_callback = (
             lambda id, old_idx, new_idx: self._on_reorder_internal(id, old_idx, new_idx)
         )
@@ -291,6 +295,8 @@ class PlaylistTabArea(ft.Container):
                 new_track_item = new_playlist_ui.get_track_item(new_track.id)
                 if new_track_item is not None:
                     new_track_item.highlight(True)
+
+            now_playing.toggle_show_hide(True)
 
         # Update the entire playlist UI once after all highlights are set
         self.playlist_stack.update()

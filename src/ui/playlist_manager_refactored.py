@@ -210,86 +210,76 @@ class PlaylistManager:
         """Handle track drop on playlist card"""
         print(f"Track {track_id} dropped on playlist {playlist_id}")
 
-        # Get track info before moving
         track_info = self.state_manager.get_track_from_playlists(track_id)
         if track_info is None:
             print(f"Track {track_id} not found")
             return
 
         source_playlist, track = track_info
+        was_active = self.state_manager.get_active_track() == track
 
-        # Check if the moved track is currently playing
-        is_active_track = self.state_manager.get_active_track() == track
-
-        res = self.state_manager.move_track_to_playlist(track_id, playlist_id)
-
-        if not res:
-            print(f"Failed to move track {track_id} to playlist {playlist_id}")
+        if source_playlist.id == playlist_id:
+            print("Track dropped on the same playlist, no action taken")
             return
 
-        # Update UI: remove from source, add to target
-        source_ui = self.tab_area.get_playlist(source_playlist.id)
-        if source_ui is not None:
-            source_ui.remove_track_item(track_id)
+        target_playlist = self.state_manager.get_playlist(playlist_id)
+        if target_playlist is None:
+            print(f"Target playlist {playlist_id} not found")
+            return
 
-        target_ui = self.tab_area.get_playlist(playlist_id)
-        if target_ui is not None:
-            target_ui.add_track_item(UiMapper.play_list_item_from_track_model(track, 0))
+        self.remove_track(source_playlist.id, track.id)
+        self.add_track(playlist_id, track)
 
-        # Handle active track being moved
-        if is_active_track:
-            self.pause(update_ui=False)
-            target_playlist = self.state_manager.set_active_playlist(playlist_id)
-
-            if target_playlist is not None:
-                target_playlist.set_active_track(track_id)
-                self.tab_area.update_ui_on_play(
-                    None, None, target_playlist, self.playback_controller.is_playing
-                )
+        if was_active:
+            print("Moved track was active, updating playback state")
+            self.state_manager.set_active_playlist(playlist_id)
+            target_playlist.set_active_track(track.id)
+            self.play()
 
         self.tab_area.update()
 
     def remove_track(self, playlist_id: str, track_id: str):
-        # """Remove a track from a playlist"""
-        # print(f"Removing track {track_id} from playlist {playlist_id}")
+        """Remove a track from a playlist"""
+        print(f"Removing track {track_id} from playlist {playlist_id}")
 
-        # playlist = self.state_manager.get_playlist(playlist_id)
-        # if playlist is None:
-        #     print(f"Playlist {playlist_id} not found")
-        #     return
+        track_info = self.state_manager.get_plalist_track_tuple(playlist_id, track_id)
+        if track_info is None:
+            print(f"Track {track_id} not found in playlist {playlist_id}")
+            return
+        playlist, track = track_info
 
-        # track = playlist.get_track(track_id)
-        # if track is None:
-        #     print(f"Track {track_id} not found in playlist")
-        #     return
+        if self.state_manager.get_active_track() == track:
+            self.pause()
+            if playlist.move_to_next_track() == track:
+                playlist.set_active_track("first")
 
-        # is_active_track = self.state_manager.get_active_track() == track
+            self.state_manager.update_last_state(None, None)
+            self.tab_area.now_playing.toggle_show_hide(False)
+            card_ui = self.tab_area.get_playslist_card(playlist_id)
+            if card_ui is not None:
+                card_ui.highlight(False)
 
-        # # Handle active track being removed - move to next track first
-        # if is_active_track:
-        #     self.pause(update_ui=False)
-        #     next_track = self.state_manager.move_to_next_track()
+        playlist.remove_track(track)
+        playlist_ui = self.tab_area.get_playlist(playlist_id)
+        if playlist_ui is not None:
+            playlist_ui.remove_track_item(track_id)
 
-        #     if next_track == track:
+        self.tab_area.update()
 
-        # # Remove from backend
-        # playlist.remove_track(track)
+    def add_track(self, playlist_id: str, track: TrackModel):
+        """Add a track to a playlist"""
+        print(f"Adding track {track.id} to playlist {playlist_id}")
 
-        # # Update UI
-        # playlist_ui = self.tab_area.get_playlist(playlist_id)
-        # if playlist_ui is not None:
-        #     playlist_ui.remove_track_item(track_id)
+        playlist = self.state_manager.get_playlist(playlist_id)
+        if playlist is None:
+            print(f"Playlist {playlist_id} not found")
+            return
 
-        # # Update playback state after removal
-        # if is_active_track:
-        #     if next_track is None:
-        #         # No next track, clear the now playing UI
-        #         self.tab_area.update_ui_on_play(
-        #             None, None, playlist, False
-        #         )
-        #     else:
-        #         # Play next track
-        #         self.play()
+        playlist.add_track(track)
+        playlit_ui = self.tab_area.get_playlist(playlist_id)
+        if playlit_ui is not None:
+            item_ui = UiMapper.play_list_item_from_track_model(track, 0)
+            playlit_ui.add_track_item(item_ui)
 
         self.tab_area.update()
 

@@ -11,6 +11,9 @@ class PlaylistCard(ft.Card):
         self.count = count
         self.duration = duration
         self.on_click = lambda id: print(id)
+        self.on_drop = lambda track_id: print(
+            f"Track {track_id} dropped on playlist {playlist_id}"
+        )
 
         self.inner_row = ft.Row(
             controls=[
@@ -47,14 +50,31 @@ class PlaylistCard(ft.Card):
 
         self.inner_row.controls.insert(0, self.playing_indicator)
 
-        self.content = ft.Container(
-            content=self.inner_row,
-            padding=ft.padding.all(10),
-            on_click=lambda e: self.on_click(self.id),
+        # Wrap content in DragTarget to accept drops
+        self.drag_target = ft.DragTarget(
+            group="playlist_tracks",
+            content=ft.Container(
+                content=self.inner_row,
+                padding=ft.padding.all(10),
+                on_click=lambda e: self.on_click(self.id),
+            ),
+            on_accept=self._on_accept_drop,
         )
+
+        self.content = self.drag_target
 
         # Set default border
         self.margin = ft.margin.all(5)
+
+    def _on_accept_drop(self, e: ft.DragTargetEvent):
+        """Handle track drop on this playlist card"""
+        if not e.src_id or not self.page:
+            return
+
+        draggable_control = self.page.get_control(str(e.src_id))
+
+        if draggable_control and hasattr(draggable_control, "data"):
+            self.on_drop(draggable_control.data)
 
     def highlight(self, show: bool):
         """Highlight this playlist card"""
