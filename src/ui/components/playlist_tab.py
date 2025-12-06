@@ -265,26 +265,19 @@ class PlaylistTabArea(ft.Container):
                 self.focus(last_control.id)
             return
 
-        # Remove highlight from previous active card
+        # Remove active state from previous card
         if self._active_tab_uuid:
             previous_card = self.get_playslist_card(self._active_tab_uuid)
             if previous_card is not None:
-                previous_card.margin = ft.margin.all(5)
-                previous_card.shadow_color = None
-                previous_card.elevation = 1
-                previous_card.update()
+                previous_card.set_active(False)
 
         self._active_tab_uuid = playlist_id
         self.show_playlist(playlist_id)
 
-        # Add subtle highlight to new active card
+        # Set active state on new card
         active_card = self.get_playslist_card(playlist_id)
         if active_card is not None:
-            print(f"Adding highlight to active card {playlist_id}")
-            active_card.margin = ft.margin.all(2)
-            active_card.shadow_color = ft.Colors.CYAN_400
-            active_card.elevation = 16
-            active_card.update()
+            active_card.set_active(True)
 
         # Notify that focus has changed
         self.on_focus_change(playlist_id)

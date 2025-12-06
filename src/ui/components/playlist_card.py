@@ -92,6 +92,18 @@ class PlaylistCard(ft.Card):
         self.name_field.value = self.name
         self.update()
 
+    def set_active(self, is_active: bool):
+        """Set visual state for active (focused) playlist"""
+        if is_active:
+            self.margin = ft.margin.all(2)
+            self.shadow_color = ft.Colors.CYAN_400
+            self.elevation = 16
+        else:
+            self.margin = ft.margin.all(5)
+            self.shadow_color = None
+            self.elevation = 1
+        self.update()
+
     def highlight(self, show: bool):
         """Highlight this playlist card"""
         self.playing_indicator.visible = show
