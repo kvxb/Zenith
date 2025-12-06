@@ -11,8 +11,8 @@ class MusicManager:
     def __init__(self, db_path: str = "playlists_songs.db"):
         self.db = SimpleMusicDB()
         self.spotify_service = SpotifyService(
-            client_id=config.SPOTIFY_CLIENT_ID,
-            redirect_uri=config.SPOTIFY_REDIRECT_URI,
+            client_id=config.CLIENT_ID,
+            redirect_uri=config.REDIRECT_URI,
             db=self.db
         )
         self.downloader = SimpleDownloader(self.db)
