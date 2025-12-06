@@ -14,17 +14,22 @@ class PlaylistCard(ft.Card):
         self.on_drop = lambda track_id: print(
             f"Track {track_id} dropped on playlist {playlist_id}"
         )
+        self.on_name_change = lambda new_name: print(f"Name changed to {new_name}")
+
+        self.name_field = ft.TextField(
+            value=self.name,
+            text_size=20,
+            border=ft.InputBorder.NONE,
+            content_padding=0,
+            on_submit=lambda e: self._on_name_submit(e.control.value),
+            on_blur=lambda e: self._on_name_submit(e.control.value),
+        )
 
         self.inner_row = ft.Row(
             controls=[
                 ft.Column(
                     [
-                        ft.Text(
-                            self.name,
-                            size=20,
-                            weight=ft.FontWeight.BOLD,
-                            overflow=ft.TextOverflow.ELLIPSIS,
-                        ),
+                        self.name_field,
                         ft.Text(
                             f"{self.count} tracks • {self.format_duration()}",
                             size=14,
@@ -75,6 +80,17 @@ class PlaylistCard(ft.Card):
 
         if draggable_control and hasattr(draggable_control, "data"):
             self.on_drop(draggable_control.data)
+
+    def _on_name_submit(self, new_name: str):
+        """Handle name change when user submits or loses focus"""
+        if new_name != self.name:
+            if not new_name:
+                new_name = "Untitled Playlist"
+            self.name = new_name
+            self.on_name_change(new_name)
+
+        self.name_field.value = self.name
+        self.update()
 
     def highlight(self, show: bool):
         """Highlight this playlist card"""

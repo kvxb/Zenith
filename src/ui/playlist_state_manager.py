@@ -127,3 +127,11 @@ class PlaylistStateManager:
     def remove_playlist(self, playlist_id: str):
         """Remove a playlist from the manager by ID"""
         self.playlists = [pl for pl in self.playlists if pl.id != playlist_id]
+
+    def rename_playlist(self, playlist_id: str, new_name: str) -> None:
+        """Rename a playlist by ID"""
+        print(f"Renaming playlist {playlist_id} to {new_name}")
+        playlist = self.get_playlist(playlist_id)
+        if playlist is None:
+            return
+        playlist.name = new_name
