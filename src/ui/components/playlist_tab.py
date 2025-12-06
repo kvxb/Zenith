@@ -137,7 +137,7 @@ class PlaylistTabArea(ft.Container):
         super().__init__(**kwargs)
 
         self._active_tab_uuid = ""
-        self.on_play = lambda id: None
+        self.on_play = lambda playlist_id, track_id: None
         self.on_reorder = lambda id, old_idx, new_idx: None
         self.on_loop = lambda: None
         self.on_search = lambda query: None
@@ -148,6 +148,8 @@ class PlaylistTabArea(ft.Container):
         self.on_add_empty_playlist = lambda: None
         self.on_add_from_spotify = lambda: None
         self.on_rename_playlist = lambda playlist_id, new_name: None
+        self.on_delete_track = lambda playlist_id, track_id: None
+        self.on_copy_track = lambda playlist_id, track_id: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -184,7 +186,9 @@ class PlaylistTabArea(ft.Container):
     def add_playlist(self, playlist_card: PlaylistCard, playlist: Playlist):
 
         playlist_card.on_click = self._on_card_click
-        playlist.on_card_click = self._on_item_click
+        playlist.on_card_click = lambda track_id: self._on_item_click(
+            playlist_card.id, track_id
+        )
         playlist_card.on_drop = lambda track_id: self.on_drop(
             playlist_card.id, track_id
         )
@@ -193,6 +197,12 @@ class PlaylistTabArea(ft.Container):
         )
         playlist.on_reorder_callback = (
             lambda id, old_idx, new_idx: self._on_reorder_internal(id, old_idx, new_idx)
+        )
+        playlist.on_delete_track = lambda track_id: self.on_delete_track(
+            playlist_card.id, track_id
+        )
+        playlist.on_copy_track = lambda track_id: self.on_copy_track(
+            playlist_card.id, track_id
         )
         # Add to controls
         self.playlist_card_list.controls.append(playlist_card)
@@ -330,12 +340,12 @@ class PlaylistTabArea(ft.Container):
     def _on_loop(self, e):
         self.on_loop()
 
-    def _on_item_click(self, id: str):
-        print(f"Item clicked in tab area: {id}")
-        self.on_play(id)
+    def _on_item_click(self, playlist_id: str, track_id: str):
+        print(f"Item clicked in tab area: playlist={playlist_id}, track={track_id}")
+        self.on_play(playlist_id, track_id)
 
     def on_play_button_click(self, e):
-        self.on_play(None)
+        self.on_play(self._active_tab_uuid, None)
 
     def toggle_play_button(self, is_playing: bool):
         if is_playing:

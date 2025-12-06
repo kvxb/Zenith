@@ -22,7 +22,9 @@ class PlaylistItem(ft.Container):
         self.album = album
         self.duration = duration
 
-        self.on_card_click = lambda id: print(f"Item clicked {id}")
+        self.on_card_click = lambda track_id: print(f"Item clicked {track_id}")
+        self.on_delete = lambda track_id: print(f"Delete track {track_id}")
+        self.on_copy = lambda track_id: print(f"Copy track {track_id}")
         self.key = track_id
 
         self.is_playing = False
@@ -35,6 +37,25 @@ class PlaylistItem(ft.Container):
         )
 
         name_author_column = self._name_author_column()
+
+        self.menu_button = ft.PopupMenuButton(
+            items=[
+                ft.PopupMenuItem(
+                    text="Copy Track",
+                    icon=ft.Icons.CONTENT_COPY,
+                    on_click=lambda e: self.on_copy(self.id),
+                ),
+                ft.PopupMenuItem(),  # Divider
+                ft.PopupMenuItem(
+                    text="Delete from Playlist",
+                    icon=ft.Icons.DELETE,
+                    on_click=lambda e: self.on_delete(self.id),
+                ),
+            ],
+            icon=ft.Icons.MORE_VERT,
+            icon_color=ft.Colors.TRANSPARENT,
+        )
+
         row_data = ft.Row(
             controls=[
                 ft.Stack(
@@ -59,6 +80,10 @@ class PlaylistItem(ft.Container):
                 ),
                 self._album_text(),
                 self._duration_text(),
+                ft.Container(
+                    content=self.menu_button,
+                    margin=ft.margin.only(right=10),
+                ),
             ],
         )
         self.content = ft.GestureDetector(
@@ -125,23 +150,13 @@ class PlaylistItem(ft.Container):
             self.border = ft.border.all(0.1, ft.Colors.GREY_400)
 
         print(f"Updating playlist item highlight {show}")
-        # if self.page:
 
     def _on_enter_event(self, e):
+        self.menu_button.icon_color = ft.Colors.WHITE
+        self.menu_button.update()
         return
-        if not self.playing_icon.visible:
-            self.bgcolor = ft.Colors.BLUE_300
-
-            if self.page:
-                self.update()
 
     def _on_exit_event(self, e):
+        self.menu_button.icon_color = ft.Colors.TRANSPARENT
+        self.menu_button.update()
         return
-        if not self.playing_icon.visible:
-            self.bgcolor = ft.Colors.TRANSPARENT
-            if self.page:
-                self.update()
-        else:
-            self.bgcolor = ft.Colors.CYAN_900
-            if self.page:
-                self.update()

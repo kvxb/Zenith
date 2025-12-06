@@ -10,6 +10,7 @@ class PlaylistStateManager:
         self.active_playlist_id = playlists[0].id if playlists else ""
         self.last_playlist: Optional[PlaylistModel] = None
         self.last_track: Optional[TrackModel] = None
+        self.copied_track: Optional[TrackModel] = None
 
     def get_playlist(self, playlist_id: str) -> Optional[PlaylistModel]:
         """Get playlist by ID"""
@@ -143,3 +144,20 @@ class PlaylistStateManager:
         new_id = str(uuid.uuid4())
         new_playlist = PlaylistModel(playlist_id=new_id, name="New Playlist", tracks=[])
         return new_playlist
+
+    def get_copied_track_copy(self) -> TrackModel | None:
+        if self.copied_track is None:
+            return None
+        import uuid
+
+        new_track = TrackModel(
+            track_id=str(uuid.uuid4()),
+            title=self.copied_track.title,
+            artist=self.copied_track.artist,
+            album=self.copied_track.album,
+            duration=self.copied_track.duration,
+            file_path=self.copied_track.file_path,
+            is_copy=True,
+        )
+
+        return new_track

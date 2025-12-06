@@ -99,64 +99,38 @@ class PlaylistManager:
         self.state_manager.update_last_state(active_playlist, track)
         self.play()
 
-    def _check_for_playlist_move(self):
-        """Check if user switched to a different playlist"""
-        active_playlist_ui = self.tab_area.get_active_playlist()
-        focused_playlist_id = active_playlist_ui.id if active_playlist_ui else None
+    def on_play(self, playlist_id: str, track_id: str | None):
+        """Handle play button or track click"""
+        if len(self.state_manager.playlists) == 0:
+            return
+        playlist = self.state_manager.get_playlist(playlist_id)
         current_playlist = self.state_manager.get_active_playlist()
 
-        if current_playlist and focused_playlist_id != current_playlist.id:
+        if playlist is None:
+            return
+
+        if current_playlist == playlist:
+            # Same playlist
+            if track_id is not None:
+                self.state_manager.update_last_state(
+                    playlist, playlist.get_active_track()
+                )
+                playlist.set_active_track(track_id)
+                self.play()
+            else:
+                self.pause() if self.playback_controller.is_playing else self.play()
+
+        else:
+            # Different playlist
             self.pause(update_ui=False)
+            self.state_manager.set_active_playlist(playlist_id)
 
             self.state_manager.update_last_state(
                 current_playlist,
                 current_playlist.get_active_track() if current_playlist else None,
             )
+            playlist.set_active_track(track_id if track_id else "first")
 
-            if focused_playlist_id is not None:
-                self.state_manager.set_active_playlist(focused_playlist_id)
-
-    def on_play(self, id: str):
-        """Handle play button or track click"""
-        if len(self.state_manager.playlists) == 0:
-            return
-
-        self._check_for_playlist_move()
-        current_playlist = self.state_manager.get_active_playlist()
-
-        if current_playlist is None:
-            return
-
-        current_track = self.state_manager.get_active_track()
-
-        # If no active track, try to activate the first one
-        if current_track is None:
-            current_track = current_playlist.set_active_track("first")
-            if current_track is None:
-                # Playlist is empty
-                return
-
-        if id is None:
-            # Play button clicked
-            if self.playback_controller.is_playing:
-                self.pause()
-            else:
-                current_playlist.resume()
-                self.play()
-            return
-
-        if id == current_track.id:
-            # Same track clicked - toggle play/pause
-            if self.playback_controller.is_playing:
-                self.pause()
-            else:
-                self.play()
-            return
-
-        # Different track clicked - switch and play
-        self.state_manager.update_last_state(current_playlist, current_track)
-        track = current_playlist.set_active_track(id)
-        if track is not None:
             self.play()
 
     def on_sound_change(self, e: ft.AudioStateChangeEvent):
@@ -201,6 +175,9 @@ class PlaylistManager:
         tab_area.on_add_empty_playlist = lambda: self.add_playlist()
 
         tab_area.on_delete_playlist = self.remove_playlist
+        tab_area.on_delete_track = self.on_delete_track
+        tab_area.on_copy_track = self.on_copy_track
+        tab_area.on_paste_track = self.on_paste_track
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
@@ -384,5 +361,45 @@ class PlaylistManager:
 
         self.tab_area.add_playlist(card_ui, playlist_ui)
         self.tab_area.toggle_body_header(True)
+
+    def on_delete_track(self, playlist_id: str, track_id: str):
+        """Delete a track from a playlist"""
+        print(f"Deleting track {track_id} from playlist {playlist_id}")
+        track_info = self.state_manager.get_plalist_track_tuple(playlist_id, track_id)
+        if track_info is None:
+            return
+
+        playlist, track = track_info
+        # Remove from backend
+        playlist.remove_track(track)
+
+        # Remove from UI
+        playlist_ui = self.tab_area.get_playlist(playlist_id)
+        if playlist_ui is not None:
+            playlist_ui.remove_track_item(track_id)
+
+    def on_copy_track(self, playlist_id: str, track_id: str):
+        """Copy a track to clipboard"""
+        print(f"Copying track {track_id} from playlist {playlist_id}")
+
+        track_info = self.state_manager.get_plalist_track_tuple(playlist_id, track_id)
+        if track_info is None:
+            return
+
+        playlist, track = track_info
+        self.state_manager.copied_track = track
+        self.tab_area.enable_paste_track(True)
+        self.tab_area.update()
+
+    def on_paste_track(self, playlist_id: str):
+        """Paste copied track to playlist"""
+        print(f"Pasting track to playlist {playlist_id}")
+
+        track_copy = self.state_manager.get_copied_track_copy()
+        if track_copy is None:
+            print("No track to paste")
+            return
+
+        self.add_track(playlist_id, track_copy)
 
         self.tab_area.update()

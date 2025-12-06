@@ -11,16 +11,22 @@ class Playlist(ft.ReorderableListView):
         self.visible = True
         self.padding = ft.padding.only(right=10)
 
-        self.on_card_click = lambda id: print(f"ERROR Clicked on item with id: {id}")
+        self.on_card_click = lambda track_id: print(
+            f"ERROR Clicked on item with id: {track_id}"
+        )
         self.on_reorder_callback = lambda id, old_idx, new_idx: print(
             f"ERROR Reorder from {old_idx} to {new_idx}"
         )
+        self.on_delete_track = lambda track_id: print(f"ERROR Delete track {track_id}")
+        self.on_copy_track = lambda track_id: print(f"ERROR Copy track {track_id}")
 
         self.on_reorder = self._on_reorder
 
     def append(self, item: PlaylistItem):
         self.controls.append(item)
-        item.on_card_click = lambda id: self.on_card_click(id)
+        item.on_card_click = lambda track_id: self.on_card_click(track_id)
+        item.on_delete = lambda track_id: self.on_delete_track(track_id)
+        item.on_copy = lambda track_id: self.on_copy_track(track_id)
 
     def shuffle(self):
         random.shuffle(self.controls)
@@ -45,7 +51,9 @@ class Playlist(ft.ReorderableListView):
         self.controls.insert(new_index, element_to_move)
 
         if isinstance(element_to_move, PlaylistItem):
-            element_to_move.on_card_click = lambda id: self.on_card_click(id)
+            element_to_move.on_card_click = lambda track_id: self.on_card_click(
+                track_id
+            )
 
         self.update()
         self.on_reorder_callback(self.id, old_index, new_index)

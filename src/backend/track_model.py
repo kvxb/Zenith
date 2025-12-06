@@ -7,6 +7,7 @@ class TrackModel:
         album: str,
         duration: int,
         file_path: str,
+        is_copy: bool = False,
     ):
         self.id = track_id
         self.title = title
@@ -14,6 +15,7 @@ class TrackModel:
         self.album = album
         self.duration = duration  # duration in seconds
         self.file_path = file_path
+        self.is_copy = is_copy
 
         self.is_looping = False
         self.played_time = 0
