@@ -249,7 +249,7 @@ class SpotifyService:
         """
         Update song count and total duration for a playlist.
         """
-        cursor = self.db.conn.cursor()
+        cursor = self.db._get_connection().cursor()
 
         # Get total tracks and duration for this playlist
         cursor.execute(
@@ -276,7 +276,7 @@ class SpotifyService:
             (song_count, total_duration, db_playlist_id),
         )
 
-        self.db.conn.commit()
+        self.db._get_connection().commit()
 
     def import_saved_tracks(self) -> dict:
         """

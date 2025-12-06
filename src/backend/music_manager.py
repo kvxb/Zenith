@@ -64,7 +64,8 @@ class MusicManager:
         """
         Internal method to convert database to PlaylistModel objects.
         """
-        cursor = self.db.conn.cursor()
+        conn = self.db._get_connection()
+        cursor = conn.cursor()
 
         # Get all playlists
         cursor.execute("SELECT id, name FROM playlists")

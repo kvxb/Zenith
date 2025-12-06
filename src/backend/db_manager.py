@@ -1,13 +1,20 @@
 import sqlite3
+import threading  # <-- ADAUGĂ ASTA
 
 
 class SimpleMusicDB:
     def __init__(self):
-        self.conn = sqlite3.connect("playlists_songs.db")
-        self._create_tables()
+        self.local = threading.local()
+        self._ensure_tables_exist()  # <-- ADAUGĂ ASTA
 
-    def _create_tables(self):
-        cursor = self.conn.cursor()
+    def _ensure_tables_exist(self):
+        """Create tables once (in main thread)."""
+        conn = sqlite3.connect("playlists_songs.db")
+        self._create_tables(conn)
+        conn.close()
+
+    def _create_tables(self, conn):
+        cursor = conn.cursor()
 
         cursor.execute(
             """
@@ -48,17 +55,25 @@ class SimpleMusicDB:
         """
         )
 
-        self.conn.commit()
+        conn.commit()
         print("✅ Database tables created!")
+
+    def _get_connection(self):
+        """Get thread-local SQLite connection."""
+        if not hasattr(self.local, 'conn'):
+            self.local.conn = sqlite3.connect("playlists_songs.db")
+        return self.local.conn
 
     # when we have to download the files from youtube
     def get_all_tracks(self):
-        cursor = self.conn.cursor()
+        conn = self._get_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM tracks")
         return cursor.fetchall()
 
     def remove_track_from_playlist(self, playlist_id, track_id):
-        cursor = self.conn.cursor()
+        conn = self._get_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT duration FROM tracks WHERE id = ?", (track_id,))
         track = cursor.fetchone()
         duration = track[0]
@@ -83,11 +98,12 @@ class SimpleMusicDB:
             (track_id,),
         )
 
-        self.conn.commit()
+        conn.commit()
 
     # the main operation done after the user chooses his playlists
     def add_track_to_playlist(self, playlist_id, title, artist, album, duration, icon):
-        cursor = self.conn.cursor()
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
         # Check if track already exists in database (including album)
         cursor.execute(
@@ -132,22 +148,24 @@ class SimpleMusicDB:
             (duration, playlist_id),
         )
 
-        self.conn.commit()
+        conn.commit()
         return track_id
 
     # before adding the tracks to the playlists we add the playlists themselves
     def add_playlist(self, name, icon=None):
-        cursor = self.conn.cursor()
+        conn = self._get_connection()
+        cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO playlists (name, song_count, total_duration, icon) VALUES (?, 0, 0, ?)",
             (name, icon),
         )
-        self.conn.commit()
+        conn.commit()
         return cursor.lastrowid
 
     # removes playlists removes the tracks from playlist_tracks db and decreases the track counter from tracks db
     def remove_playlist(self, playlist_id):
-        cursor = self.conn.cursor()
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
         cursor.execute(
             "SELECT track_id FROM playlist_tracks WHERE playlist_id = ?", (playlist_id,)
@@ -166,12 +184,13 @@ class SimpleMusicDB:
 
         cursor.execute("DELETE FROM playlists WHERE id = ?", (playlist_id,))
 
-        self.conn.commit()
+        conn.commit()
         print(f"Playlist {playlist_id} removed successfully")
 
     # keep a counter on every track and when the counter reaches 0 and the user wants to free useless mem delete all files with 0 uses
     def delete_unused_tracks(self):
-        cursor = self.conn.cursor()
+        conn = self._get_connection()
+        cursor = conn.cursor()
 
         cursor.execute(
             "SELECT id, title, artist FROM tracks WHERE reference_count <= 0"
@@ -188,7 +207,7 @@ class SimpleMusicDB:
         cursor.execute(f"DELETE FROM tracks WHERE id IN ({placeholders})", track_ids)
 
         deleted_count = cursor.rowcount
-        self.conn.commit()
+        conn.commit()
 
         print(f"Deleted {deleted_count} unused tracks:")
         for track_id, title, artist in unused_tracks:

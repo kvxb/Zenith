@@ -76,7 +76,7 @@ class SimpleDownloader:
         Returns True if successful.
         """
         # Get track info from database
-        cursor = self.db.conn.cursor()
+        cursor = self.db._get_connection().cursor()
         cursor.execute("SELECT title, artist FROM tracks WHERE id = ?", (track_id,))
         track = cursor.fetchone()
 
@@ -96,7 +96,7 @@ class SimpleDownloader:
             cursor.execute(
                 "UPDATE tracks SET path_mp3 = ? WHERE id = ?", (file_path, track_id)
             )
-            self.db.conn.commit()
+            self.db._get_connection().commit()
             print(f"✓ Downloaded: {artist} - {title}")
             return True
         else:
@@ -112,7 +112,7 @@ class SimpleDownloader:
             (success_count, failed_count)
         """
         # Get all track IDs without a path
-        cursor = self.db.conn.cursor()
+        cursor = self.db._get_connection().cursor()
         cursor.execute("SELECT id FROM tracks WHERE path_mp3 IS NULL OR path_mp3 = ''")
         track_ids = [row[0] for row in cursor.fetchall()]
 
@@ -151,7 +151,7 @@ class SimpleDownloader:
             (success_count, failed_count)
         """
         # Get track IDs for this playlist that aren't downloaded yet
-        cursor = self.db.conn.cursor()
+        cursor = self.db._get_connection().cursor()
         cursor.execute(
             """
             SELECT t.id 
