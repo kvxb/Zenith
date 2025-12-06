@@ -1,4 +1,4 @@
-from src.backend.track_model import TrackModel
+from backend.track_model import TrackModel
 import flet as ft
 import time
 

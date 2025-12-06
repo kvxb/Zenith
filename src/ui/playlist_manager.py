@@ -1,10 +1,12 @@
 import flet as ft
-from src.ui.components import PlaylistTabArea
-from src.ui import AudioManager
-from src.ui.playback_controller import PlaybackController
-from src.ui.playlist_state_manager import PlaylistStateManager
-from src.backend import PlaylistModel, TrackModel
-from src.ui.ui_mapper import UiMapper
+from ui.components import PlaylistTabArea
+from ui import AudioManager
+from ui.playback_controller import PlaybackController
+from ui.playlist_state_manager import PlaylistStateManager
+from backend import PlaylistModel, TrackModel
+from ui.ui_mapper import UiMapper
+
+# from backend.music_manager import MusicManager
 
 
 class PlaylistManager:
@@ -15,6 +17,7 @@ class PlaylistManager:
         self.playback_controller = PlaybackController(self.audio_manager)
         self.tab_area = UiMapper.playlist_tab_area_from_models(playlists)
 
+        # self.music_manager = MusicManager()
         self.event_bindings()
 
     def add_to_page(self, page: ft.Page):
@@ -173,6 +176,7 @@ class PlaylistManager:
             )
         )
         tab_area.on_add_empty_playlist = lambda: self.add_playlist()
+        tab_area.on_add_from_spotify = self.get_from_spotify
 
         tab_area.on_delete_playlist = self.remove_playlist
         tab_area.on_delete_track = self.on_delete_track
@@ -421,3 +425,12 @@ class PlaylistManager:
         self.add_track(playlist_id, track_copy)
 
         self.tab_area.update()
+
+    def get_from_spotify(self):
+        return
+        """Fetch playlists from Spotify"""
+        print("Fetching playlists from Spotify")
+        playlists = self.music_manager.sync_all()
+
+        for playlist in playlists:
+            self.add_playlist(playlist)

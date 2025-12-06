@@ -5,8 +5,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 import flet as ft
 import uuid
 from flet_audio import Audio
-from src.ui import PlaylistManager
-from src.backend import TrackModel, PlaylistModel
+from ui import PlaylistManager
+from backend import TrackModel, PlaylistModel
 
 random_tracks = [
     TrackModel(

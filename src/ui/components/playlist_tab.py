@@ -3,7 +3,7 @@ from typing import Optional, Callable
 from .playlist_card import PlaylistCard
 from .playlist import Playlist
 from .now_playing import NowPlaying
-from src.backend.playlist_model import PlaylistModel, TrackModel
+from backend.playlist_model import PlaylistModel, TrackModel
 
 
 class PlaylistTabArea(ft.Container):

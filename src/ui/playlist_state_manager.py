@@ -1,7 +1,7 @@
 """Manages playlist and track state"""
 
 from typing import Optional
-from src.backend import PlaylistModel, TrackModel
+from backend import PlaylistModel, TrackModel
 
 
 class PlaylistStateManager:

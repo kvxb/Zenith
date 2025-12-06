@@ -1,7 +1,5 @@
-"""Handles playback control logic - play, pause, next, previous"""
-
-from src.ui import AudioManager
-from src.backend import TrackModel, PlaylistModel
+from ui import AudioManager
+from backend import TrackModel, PlaylistModel
 
 
 class PlaybackController:

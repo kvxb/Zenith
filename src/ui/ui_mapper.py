@@ -1,5 +1,5 @@
-from src.backend import TrackModel, PlaylistModel
-from src.ui.components import Playlist, PlaylistItem, PlaylistTabArea, PlaylistCard
+from backend import TrackModel, PlaylistModel
+from ui.components import Playlist, PlaylistItem, PlaylistTabArea, PlaylistCard
 
 
 class UiMapper:
