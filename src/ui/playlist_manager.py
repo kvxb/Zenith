@@ -246,6 +246,9 @@ class PlaylistManager:
         if playlist_ui is not None:
             playlist_ui.remove_track_item(track_id)
 
+        card_ui = self.tab_area.get_playslist_card(playlist_id)
+        if card_ui is not None:
+            card_ui.update_metrics(playlist.size(), playlist.total_duration())
         self.tab_area.update()
 
     def add_track(self, playlist_id: str, track: TrackModel):
@@ -263,6 +266,9 @@ class PlaylistManager:
             item_ui = UiMapper.play_list_item_from_track_model(track, 0)
             playlit_ui.add_track_item(item_ui)
 
+        card_ui = self.tab_area.get_playslist_card(playlist_id)
+        if card_ui is not None:
+            card_ui.update_metrics(playlist.size(), playlist.total_duration())
         self.tab_area.update()
 
     def _on_slider_seek(self, position):
@@ -292,8 +298,13 @@ class PlaylistManager:
         current_playlist = self.state_manager.get_active_playlist()
         current_track = self.state_manager.get_active_track()
 
-        if current_track is None or current_playlist is None:
+        if current_playlist is None:
             return
+        if current_track is None:
+            current_playlist.set_active_track("first")
+            current_track = self.state_manager.get_active_track()
+            if current_track is None:
+                return
 
         previous_playlist = self.state_manager.last_playlist
         previous_track = self.state_manager.last_track
@@ -363,6 +374,7 @@ class PlaylistManager:
 
         self.tab_area.add_playlist(card_ui, playlist_ui)
         self.tab_area.toggle_body_header(True)
+        self.tab_area.update()
 
     def on_delete_track(self, playlist_id: str, track_id: str):
         """Delete a track from a playlist"""

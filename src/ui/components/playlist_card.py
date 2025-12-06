@@ -25,17 +25,19 @@ class PlaylistCard(ft.Card):
             on_blur=lambda e: self._on_name_submit(e.control.value),
         )
 
+        self.metrics_text = ft.Text(
+            f"{self.count} tracks • {self.format_duration()}",
+            size=14,
+            color=ft.Colors.GREY_600,
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+
         self.inner_row = ft.Row(
             controls=[
                 ft.Column(
                     [
                         self.name_field,
-                        ft.Text(
-                            f"{self.count} tracks • {self.format_duration()}",
-                            size=14,
-                            color=ft.Colors.GREY_600,
-                            overflow=ft.TextOverflow.ELLIPSIS,
-                        ),
+                        self.metrics_text,
                     ],
                     alignment=ft.MainAxisAlignment.START,
                     expand=True,
@@ -120,6 +122,13 @@ class PlaylistCard(ft.Card):
             return f"{hours}h {minutes}m {seconds}s"
         else:
             return f"{minutes}m {seconds}s"
+
+    def update_metrics(self, nr_tracks: int, total_duration: int):
+        """Update any metrics displayed on the playlist items"""
+        self.count = nr_tracks
+        self.duration = total_duration
+        self.metrics_text.value = f"{self.count} tracks • {self.format_duration()}"
+        self.metrics_text.update()
 
     def __repr__(self):
         return f"PlaylistCard(id={self.id}, name={self.name}, count={self.count}, duration={self.duration})"
