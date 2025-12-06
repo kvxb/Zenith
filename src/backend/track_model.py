@@ -18,4 +18,3 @@ class TrackModel:
 
 	def __repr__(self):
 		return f"TrackModel(title={self.title}, artist={self.artist}, album={self.album}, duration={self.duration}, file_path={self.file_path})"
-  
