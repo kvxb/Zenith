@@ -36,6 +36,6 @@ def test_pkce_authentication():
         return False
     
     return True
-
-if __name__ == "__main__":
-    test_pkce_authentication()
+#
+# if __name__ == "__main__":
+#     test_pkce_authentication()

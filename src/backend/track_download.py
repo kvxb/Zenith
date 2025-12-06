@@ -186,64 +186,64 @@ class SimpleDownloader:
         return success, failed
 
 # Simple test
-if __name__ == "__main__":
-    # Initialize
-    db = SimpleMusicDB()
-    downloader = SimpleDownloader(db)
-    
-    print("=== Simple YouTube Downloader Test ===\n")
-    
-    # Clear old test data
-    print("Clearing old test data...")
-    cursor = db.conn.cursor()
-    cursor.execute("DELETE FROM playlist_tracks")
-    cursor.execute("DELETE FROM tracks")
-    cursor.execute("DELETE FROM playlists")
-    db.conn.commit()
-    print("Database cleared\n")
-    
-    # Create a test playlist
-    playlist_id = db.add_playlist("Test Playlist")
-    print(f"Created playlist ID: {playlist_id}")
-    
-    # Add test songs
-    test_songs = [
-        ("Heavener", "Invent Animate"),
-        ("Icarus", "fromjoy")
-    ]
-    
-    added_tracks = []
-    for title, artist in test_songs:
-        track_id = db.add_track_to_playlist(
-            playlist_id=playlist_id,
-            title=title,
-            artist=artist,
-            duration=0,  # Duration doesn't matter for download
-            icon=None
-        )
-        added_tracks.append(track_id)
-        print(f"Added: {artist} - {title} (ID: {track_id})")
-    
-    print(f"\nAdded {len(added_tracks)} tracks to the database")
-    print("\n" + "="*50)
-    
-    # Test bulk download
-    print("\nStarting bulk download...")
-    success, failed = downloader.download_all_tracks()
-    
-    print("\n" + "="*50)
-    
-    # Show final status
-    print("\nFinal status:")
-    cursor = db.conn.cursor()
-    cursor.execute("SELECT id, title, artist, path_mp3 FROM tracks")
-    all_tracks = cursor.fetchall()
-    
-    for track_id, title, artist, path_mp3 in all_tracks:
-        if path_mp3 and os.path.exists(path_mp3):
-            file_size = os.path.getsize(path_mp3) / 1024 / 1024
-            print(f"✓ {artist} - {title} ({file_size:.1f} MB)")
-        else:
-            print(f"✗ {artist} - {title}: Not downloaded")
-    
-    print(f"\n✅ Test completed!")
+# if __name__ == "__main__":
+#     # Initialize
+#     db = SimpleMusicDB()
+#     downloader = SimpleDownloader(db)
+#
+#     print("=== Simple YouTube Downloader Test ===\n")
+#
+#     # Clear old test data
+#     print("Clearing old test data...")
+#     cursor = db.conn.cursor()
+#     cursor.execute("DELETE FROM playlist_tracks")
+#     cursor.execute("DELETE FROM tracks")
+#     cursor.execute("DELETE FROM playlists")
+#     db.conn.commit()
+#     print("Database cleared\n")
+#
+#     # Create a test playlist
+#     playlist_id = db.add_playlist("Test Playlist")
+#     print(f"Created playlist ID: {playlist_id}")
+#
+#     # Add test songs
+#     test_songs = [
+#         ("Heavener", "Invent Animate"),
+#         ("Icarus", "fromjoy")
+#     ]
+#
+#     added_tracks = []
+#     for title, artist in test_songs:
+#         track_id = db.add_track_to_playlist(
+#             playlist_id=playlist_id,
+#             title=title,
+#             artist=artist,
+#             duration=0,  # Duration doesn't matter for download
+#             icon=None
+#         )
+#         added_tracks.append(track_id)
+#         print(f"Added: {artist} - {title} (ID: {track_id})")
+#
+#     print(f"\nAdded {len(added_tracks)} tracks to the database")
+#     print("\n" + "="*50)
+#
+#     # Test bulk download
+#     print("\nStarting bulk download...")
+#     success, failed = downloader.download_all_tracks()
+#
+#     print("\n" + "="*50)
+#
+#     # Show final status
+#     print("\nFinal status:")
+#     cursor = db.conn.cursor()
+#     cursor.execute("SELECT id, title, artist, path_mp3 FROM tracks")
+#     all_tracks = cursor.fetchall()
+#
+#     for track_id, title, artist, path_mp3 in all_tracks:
+#         if path_mp3 and os.path.exists(path_mp3):
+#             file_size = os.path.getsize(path_mp3) / 1024 / 1024
+#             print(f"✓ {artist} - {title} ({file_size:.1f} MB)")
+#         else:
+#             print(f"✗ {artist} - {title}: Not downloaded")
+#
+#     print(f"\n✅ Test completed!")
