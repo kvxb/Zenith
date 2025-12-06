@@ -5,7 +5,6 @@ from src.ui.components import PlaylistTabArea
 from src.ui import AudioManager
 from src.ui.playback_controller import PlaybackController
 from src.ui.playlist_state_manager import PlaylistStateManager
-from src.ui.ui_event_handler import UIEventHandler
 from src.backend import PlaylistModel, TrackModel
 from src.ui.ui_mapper import UiMapper
 
@@ -16,8 +15,7 @@ class PlaylistManager:
         self.state_manager = PlaylistStateManager(playlists)
         self.audio_manager = AudioManager()
         self.playback_controller = PlaybackController(self.audio_manager)
-        self.playlist_tab_area = UiMapper.playlist_tab_area_from_models(playlists)
-        self.ui_handler = UIEventHandler(self.playlist_tab_area)
+        self.tab_area = UiMapper.playlist_tab_area_from_models(playlists)
 
         self.event_bindings()
 
@@ -25,7 +23,7 @@ class PlaylistManager:
         self.audio_manager.added_to_page = True
         self.page = page
         page.overlay.append(self.audio_manager.audio)
-        page.add(self.playlist_tab_area)
+        page.add(self.tab_area)
 
         page.on_connect = lambda e: self.reconnect()
         page.on_disconnect = lambda e: self.on_disconnect()
@@ -58,7 +56,7 @@ class PlaylistManager:
 
         # Update UI to reflect stopped state
         if active_playlist is not None:
-            self.ui_handler.update_ui_on_play(
+            self.tab_area.update_ui_on_play(
                 None, None, active_playlist, self.playback_controller.is_playing
             )
 
@@ -105,7 +103,8 @@ class PlaylistManager:
 
     def _check_for_playlist_move(self):
         """Check if user switched to a different playlist"""
-        focused_playlist_id = self.ui_handler.get_focused_playlist_id()
+        active_playlist_ui = self.tab_area.get_active_playlist()
+        focused_playlist_id = active_playlist_ui.id if active_playlist_ui else None
         current_playlist = self.state_manager.get_active_playlist()
 
         if current_playlist and focused_playlist_id != current_playlist.id:
@@ -126,10 +125,18 @@ class PlaylistManager:
 
         self._check_for_playlist_move()
         current_playlist = self.state_manager.get_active_playlist()
+
+        if current_playlist is None:
+            return
+
         current_track = self.state_manager.get_active_track()
 
-        if current_playlist is None or current_track is None:
-            return
+        # If no active track, try to activate the first one
+        if current_track is None:
+            current_track = current_playlist.set_active_track("first")
+            if current_track is None:
+                # Playlist is empty
+                return
 
         if id is None:
             # Play button clicked
@@ -170,20 +177,23 @@ class PlaylistManager:
         if playlist is None:
             return
 
-        playlist.track_order_list = self.ui_handler.on_reorder(id, old_idx, new_idx)
-        self.playlist_tab_area.update()
+        playlist_ui = self.tab_area.get_playlist(id)
+        if playlist_ui is not None:
+            playlist.track_order_list = playlist_ui.get_uuid_list()
+        self.tab_area.update()
 
     def event_bindings(self):
         """Bind all UI events to handlers"""
-        tab_area = self.playlist_tab_area
+        tab_area = self.tab_area
         now_playing = tab_area.now_playing
         audio = self.audio_manager.audio
 
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
+        tab_area.on_drop = self.on_track_drop
 
         self.audio_manager.on_sound_change = self.on_sound_change
-        audio.on_position_changed = lambda e: self.ui_handler.update_playback_position(
+        audio.on_position_changed = lambda e: now_playing.update_playback_position(
             int(e.position)
         )
         audio.on_seek_complete = lambda e: now_playing.seek_complete()
@@ -195,6 +205,93 @@ class PlaylistManager:
 
         now_playing.next_btn.on_click = lambda e: self.play_next_track()
         now_playing.previous_btn.on_click = lambda e: self.play_previous_track()
+
+    def on_track_drop(self, playlist_id: str, track_id: str):
+        """Handle track drop on playlist card"""
+        print(f"Track {track_id} dropped on playlist {playlist_id}")
+
+        # Get track info before moving
+        track_info = self.state_manager.get_track_from_playlists(track_id)
+        if track_info is None:
+            print(f"Track {track_id} not found")
+            return
+
+        source_playlist, track = track_info
+
+        # Check if the moved track is currently playing
+        is_active_track = self.state_manager.get_active_track() == track
+
+        res = self.state_manager.move_track_to_playlist(track_id, playlist_id)
+
+        if not res:
+            print(f"Failed to move track {track_id} to playlist {playlist_id}")
+            return
+
+        # Update UI: remove from source, add to target
+        source_ui = self.tab_area.get_playlist(source_playlist.id)
+        if source_ui is not None:
+            source_ui.remove_track_item(track_id)
+
+        target_ui = self.tab_area.get_playlist(playlist_id)
+        if target_ui is not None:
+            target_ui.add_track_item(UiMapper.play_list_item_from_track_model(track, 0))
+
+        # Handle active track being moved
+        if is_active_track:
+            self.pause(update_ui=False)
+            target_playlist = self.state_manager.set_active_playlist(playlist_id)
+
+            if target_playlist is not None:
+                target_playlist.set_active_track(track_id)
+                self.tab_area.update_ui_on_play(
+                    None, None, target_playlist, self.playback_controller.is_playing
+                )
+
+        self.tab_area.update()
+
+    def remove_track(self, playlist_id: str, track_id: str):
+        # """Remove a track from a playlist"""
+        # print(f"Removing track {track_id} from playlist {playlist_id}")
+
+        # playlist = self.state_manager.get_playlist(playlist_id)
+        # if playlist is None:
+        #     print(f"Playlist {playlist_id} not found")
+        #     return
+
+        # track = playlist.get_track(track_id)
+        # if track is None:
+        #     print(f"Track {track_id} not found in playlist")
+        #     return
+
+        # is_active_track = self.state_manager.get_active_track() == track
+
+        # # Handle active track being removed - move to next track first
+        # if is_active_track:
+        #     self.pause(update_ui=False)
+        #     next_track = self.state_manager.move_to_next_track()
+
+        #     if next_track == track:
+
+        # # Remove from backend
+        # playlist.remove_track(track)
+
+        # # Update UI
+        # playlist_ui = self.tab_area.get_playlist(playlist_id)
+        # if playlist_ui is not None:
+        #     playlist_ui.remove_track_item(track_id)
+
+        # # Update playback state after removal
+        # if is_active_track:
+        #     if next_track is None:
+        #         # No next track, clear the now playing UI
+        #         self.tab_area.update_ui_on_play(
+        #             None, None, playlist, False
+        #         )
+        #     else:
+        #         # Play next track
+        #         self.play()
+
+        self.tab_area.update()
 
     def _on_slider_seek(self, position):
         """Handle seek slider changes"""
@@ -214,7 +311,7 @@ class PlaylistManager:
         active_playlist.pause(current_pos)
 
         if update_ui:
-            self.ui_handler.update_ui_on_play(
+            self.tab_area.update_ui_on_play(
                 None, None, active_playlist, self.playback_controller.is_playing
             )
 
@@ -234,9 +331,13 @@ class PlaylistManager:
 
         self.state_manager.update_last_state(current_playlist, current_track)
 
-        self.ui_handler.update_ui_on_play(
+        self.tab_area.update_ui_on_play(
             previous_playlist,
             previous_track,
             current_playlist,
             self.playback_controller.is_playing,
         )
+
+    def on_search(self, query: str):
+        """Handle search queries"""
+        result = self.state_manager.get_track_of_name(query)

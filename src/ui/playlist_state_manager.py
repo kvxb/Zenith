@@ -25,6 +25,7 @@ class PlaylistStateManager:
     def set_active_playlist(self, playlist_id: str):
         """Set the active playlist"""
         self.active_playlist_id = playlist_id
+        return self.get_active_playlist()
 
     def get_active_track(self) -> Optional[TrackModel]:
         """Get the currently active track"""
@@ -73,3 +74,20 @@ class PlaylistStateManager:
                 if track.title == track_name:
                     return (playlist, track)
         return None
+
+    def move_track_to_playlist(self, track_id: str, target_playlist_id: str) -> bool:
+        """Move a track to a different playlist"""
+        source = self.get_track_from_playlists(track_id)
+        target_playlist = self.get_playlist(target_playlist_id)
+
+        if source is None or target_playlist is None:
+            return False
+
+        source_playlist, track = source
+
+        if source_playlist.id == target_playlist.id:
+            return False
+
+        source_playlist.remove_track(track)
+        target_playlist.add_track(track)
+        return True

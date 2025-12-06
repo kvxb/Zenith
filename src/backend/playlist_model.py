@@ -7,7 +7,7 @@ class PlaylistModel:
         self.name = name
         self.track_dict = {track.id: track for track in tracks}
         self.track_order_list = [track.id for track in tracks]
-        self.current_track_id = self.track_order_list[0] if tracks else ""
+        self.current_track_id = None
 
         self.is_looping = False
 
@@ -35,10 +35,26 @@ class PlaylistModel:
         return len(self.track_dict)
 
     def get_active_track(self) -> TrackModel | None:
-        return self.get_track(self.current_track_id)
+        return self.get_track(self.current_track_id) if self.current_track_id else None
 
-    def set_active_track(self, track_id: str):
-        if track_id in self.track_order_list:
+    def set_active_track(self, track_id: str | None):
+        """Set the active track by ID. Pass None, 'first', or 'last' for special cases"""
+        if track_id is None:
+            if self.size() == 0:
+                self.current_track_id = None
+            else:
+                self.current_track_id = self.track_order_list[0]
+        elif track_id == "first":
+            if self.size() == 0:
+                self.current_track_id = None
+            else:
+                self.current_track_id = self.track_order_list[0]
+        elif track_id == "last":
+            if self.size() == 0:
+                self.current_track_id = None
+            else:
+                self.current_track_id = self.track_order_list[-1]
+        elif track_id in self.track_order_list:
             self.current_track_id = track_id
         return self.get_active_track()
 
@@ -59,30 +75,41 @@ class PlaylistModel:
         else:
             return track
 
-    def get_list_id_of_active_track(self) -> int:
-        return self.track_order_list.index(self.current_track_id)
+    def get_list_id_of_active_track(self) -> int | None:
+        return (
+            self.track_order_list.index(self.current_track_id)
+            if self.current_track_id
+            else None
+        )
 
     def move_to_next_track(self) -> TrackModel | None:
-        index = self.get_list_id_of_active_track() + 1
+        index = self.get_list_id_of_active_track()
+        if index is None:
+            return self.set_active_track("first")
+
+        index += 1
 
         if index >= self.size():
-            if self.is_looping:
-                self.current_track_id = self.track_order_list[0]
-        else:
-            self.current_track_id = self.track_order_list[index]
+            return self.set_active_track("first") if self.is_looping else None
 
+        self.current_track_id = self.track_order_list[index]
         return self.get_active_track()
 
     def move_to_previous_track(self) -> TrackModel | None:
-        index = self.get_list_id_of_active_track() - 1
+        index = self.get_list_id_of_active_track()
+        if index is None:
+            return self.set_active_track("first")
+
+        index -= 1
 
         if index < 0:
-            if self.is_looping:
-                self.current_track_id = self.track_order_list[-1]
-        else:
-            self.current_track_id = self.track_order_list[index]
+            return self.set_active_track("last") if self.is_looping else None
 
+        self.current_track_id = self.track_order_list[index]
         return self.get_active_track()
+
+    def is_inactive(self) -> bool:
+        return self.current_track_id is None
 
     def __repr__(self):
         return f"PlaylistModel(name={self.name}, tracks={self.track_dict})"
