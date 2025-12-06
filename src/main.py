@@ -153,6 +153,8 @@ def on_event(e: ft.WindowEvent, page: ft.Page):
 def main(page: ft.Page):
     page.title = "Zenith"
 
+    # page.theme = ft.Theme(color_scheme_seed=ft.Colors.CYAN_100)
+
     page.window.prevent_close = True
     page.window.on_event = lambda e: on_event(e, page)
 

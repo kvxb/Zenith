@@ -32,7 +32,7 @@ class PlaylistItem(ft.Container):
         self.playing_icon = ft.Icon(
             name=ft.Icons.VOLUME_UP_ROUNDED,
             size=24,
-            color=ft.Colors.CYAN_400,
+            color=ft.Colors.PRIMARY,
             visible=False,
         )
 
@@ -53,7 +53,8 @@ class PlaylistItem(ft.Container):
                 ),
             ],
             icon=ft.Icons.MORE_VERT,
-            icon_color=ft.Colors.TRANSPARENT,
+            icon_color=ft.Colors.WHITE,
+            visible=False,
         )
 
         row_data = ft.Row(
@@ -62,6 +63,7 @@ class PlaylistItem(ft.Container):
                     controls=[
                         self.number_text_control,
                         self.playing_icon,
+                        self.menu_button,
                     ],
                     width=40,
                 ),
@@ -87,33 +89,17 @@ class PlaylistItem(ft.Container):
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        self.content = ft.Stack(
-            controls=[
-                ft.GestureDetector(
-                    content=row_data,
-                    on_enter=self._on_enter_event,
-                    on_exit=self._on_exit_event,
-                    on_tap=lambda e: self.on_card_click(self.id),
-                ),
-                ft.Container(
-                    content=ft.GestureDetector(
-                        content=self.menu_button,
-                        on_enter=self._on_enter_event,
-                        on_exit=self._on_exit_event,
-                    ),
-                    right=10,
-                    top=0,
-                    bottom=0,
-                    alignment=ft.alignment.center,
-                ),
-            ],
-            expand=True,
+        self.content = ft.GestureDetector(
+            content=row_data,
+            on_enter=self._on_enter_event,
+            on_exit=self._on_exit_event,
+            on_tap=lambda e: self.on_card_click(self.id),
         )
 
         # Container styling
         self.padding = ft.padding.all(10)
         self.margin = ft.margin.only(bottom=10)
-        self.border = ft.border.all(0.1, ft.Colors.GREY_400)
+        self.border = ft.border.all(0.1, ft.Colors.OUTLINE)
         self.border_radius = 5
         self.bgcolor = ft.Colors.TRANSPARENT
         self.ink = True
@@ -173,18 +159,22 @@ class PlaylistItem(ft.Container):
         self.playing_icon.visible = show
         self.number_text_control.visible = not show
         if show:
-            self.bgcolor = ft.Colors.CYAN_900
-            self.border = ft.border.all(1, ft.Colors.CYAN_400)
+            self.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            self.border = ft.border.all(1, ft.Colors.PRIMARY)
         else:
             self.bgcolor = ft.Colors.TRANSPARENT
-            self.border = ft.border.all(0.1, ft.Colors.GREY_400)
+            self.border = ft.border.all(0.1, ft.Colors.OUTLINE)
 
         print(f"Updating playlist item highlight {show}")
 
     def _on_enter_event(self, e):
-        self.menu_button.icon_color = ft.Colors.WHITE
-        self.menu_button.update()
+        if not self.is_playing:
+            self.number_text_control.visible = False
+            self.menu_button.visible = True
+            self.update()
 
     def _on_exit_event(self, e):
-        self.menu_button.icon_color = ft.Colors.TRANSPARENT
-        self.menu_button.update()
+        if not self.is_playing:
+            self.number_text_control.visible = True
+            self.menu_button.visible = False
+            self.update()

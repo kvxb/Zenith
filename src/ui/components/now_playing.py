@@ -44,8 +44,8 @@ class NowPlaying(ft.Container):
             min=0,
             max=180000,
             value=0,
-            active_color=ft.Colors.CYAN_400,
-            inactive_color=ft.Colors.GREY_700,
+            active_color=ft.Colors.PRIMARY,
+            inactive_color=ft.Colors.OUTLINE,
             on_change=self._on_change,
             on_change_end=self._slider_scrub_end,
             on_change_start=lambda e: self._on_slider_start(e),
@@ -103,7 +103,7 @@ class NowPlaying(ft.Container):
         )
 
         self.padding = ft.padding.only(left=15, right=15, top=5, bottom=5)
-        self.bgcolor = ft.Colors.BLUE_GREY_900
+        self.bgcolor = ft.Colors.SECONDARY_CONTAINER
         self.visible = True
         self.height = 0
         self.animate_size = ft.Animation(300, ft.AnimationCurve.EASE_OUT)
