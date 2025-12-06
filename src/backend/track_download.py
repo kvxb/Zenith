@@ -2,7 +2,6 @@ import yt_dlp
 import os
 from pathlib import Path
 from db_manager import SimpleMusicDB
-import concurrent.futures
 
 class SimpleDownloader:
     def __init__(self, db: SimpleMusicDB, download_dir: str = "downloads"):
@@ -17,7 +16,7 @@ class SimpleDownloader:
         self.download_dir = Path(download_dir)
         self.download_dir.mkdir(exist_ok=True)
         
-        # Basic yt-dlp config
+        # Simple yt-dlp config - no duration matching
         self.ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -31,37 +30,37 @@ class SimpleDownloader:
     
     def _search_and_download(self, title: str, artist: str) -> str:
         """
-        Search YouTube and download a song.
+        Search YouTube using just song name and artist.
         Returns the file path if successful.
         """
-        # Create search query
-        query = f"{artist} {title} audio"
-        
-        # First, search for the video
-        search_opts = {
-            'quiet': True,
-            'extract_flat': True,
-            'default_search': 'ytsearch',
-        }
+        # Simple search query - just artist and title
+        query = f"{artist} {title}"
         
         try:
-            with yt_dlp.YoutubeDL(search_opts) as ydl:
-                info = ydl.extract_info(query, download=False)
-                if 'entries' in info and info['entries']:
-                    video_url = f"https://www.youtube.com/watch?v={info['entries'][0]['id']}"
-                    
-                    # Now download it
-                    self.ydl_opts['outtmpl'] = str(self.download_dir / f'{title} - {artist}.%(ext)s')
-                    
-                    with yt_dlp.YoutubeDL(self.ydl_opts) as ydl_dl:
-                        ydl_dl.download([video_url])
-                    
-                    # Find the downloaded file
-                    for file in self.download_dir.iterdir():
-                        if file.suffix == '.mp3' and title in file.stem and artist in file.stem:
-                            return str(file)
+            # Set output template
+            download_opts = self.ydl_opts.copy()
+            download_opts['outtmpl'] = str(self.download_dir / f'{artist} - {title}.%(ext)s')
             
-            return None
+            # Search and download in one go
+            with yt_dlp.YoutubeDL(download_opts) as ydl:
+                # Use ytsearch to find the song
+                info = ydl.extract_info(f"ytsearch:{query}", download=True)
+                
+                # Find the downloaded file
+                expected_filename = f"{artist} - {title}.mp3"
+                for file in self.download_dir.iterdir():
+                    if file.name == expected_filename:
+                        return str(file)
+                
+                # If not found by exact name, get any new mp3 file
+                mp3_files = list(self.download_dir.glob("*.mp3"))
+                if mp3_files:
+                    # Get most recently modified
+                    latest_file = max(mp3_files, key=lambda f: f.stat().st_mtime)
+                    return str(latest_file)
+                
+                return None
+                
         except Exception as e:
             print(f"Error downloading {artist} - {title}: {e}")
             return None
@@ -100,14 +99,11 @@ class SimpleDownloader:
             print(f"✗ Failed to download: {artist} - {title}")
             return False
     
-    def download_all_tracks(self, max_workers: int = 4) -> tuple:
+    def download_all_tracks(self) -> tuple:
         """
         Download ALL tracks in the database that don't have a path.
-        Uses multithreading for faster downloads.
+        Simple sequential download.
         
-        Args:
-            max_workers: Number of parallel downloads
-            
         Returns:
             (success_count, failed_count)
         """
@@ -121,43 +117,31 @@ class SimpleDownloader:
             return 0, 0
         
         print(f"Found {len(track_ids)} tracks to download")
-        print("Starting bulk download...")
+        print("Starting sequential download...")
         
-        # Use ThreadPoolExecutor for parallel downloads
         success = 0
         failed = 0
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all download tasks
-            future_to_id = {
-                executor.submit(self.download_track, track_id): track_id 
-                for track_id in track_ids
-            }
-            
-            # Process results as they complete
-            for future in concurrent.futures.as_completed(future_to_id):
-                track_id = future_to_id[future]
-                try:
-                    if future.result():
-                        success += 1
-                    else:
-                        failed += 1
-                except Exception:
-                    failed += 1
+        for i, track_id in enumerate(track_ids, 1):
+            print(f"\n[{i}/{len(track_ids)}] ", end="")
+            if self.download_track(track_id):
+                success += 1
+            else:
+                failed += 1
         
-        print(f"\nDownload complete!")
+        print(f"\n" + "="*50)
+        print(f"DOWNLOAD COMPLETE!")
         print(f"✓ Successfully downloaded: {success}")
         print(f"✗ Failed: {failed}")
         
         return success, failed
     
-    def download_playlist(self, playlist_id: int, max_workers: int = 4) -> tuple:
+    def download_playlist(self, playlist_id: int) -> tuple:
         """
         Download all tracks in a specific playlist.
         
         Args:
             playlist_id: The playlist ID
-            max_workers: Number of parallel downloads
             
         Returns:
             (success_count, failed_count)
@@ -185,25 +169,15 @@ class SimpleDownloader:
         print(f"Downloading playlist: {playlist_name}")
         print(f"Found {len(track_ids)} tracks to download")
         
-        # Use the same parallel download logic
         success = 0
         failed = 0
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_id = {
-                executor.submit(self.download_track, track_id): track_id 
-                for track_id in track_ids
-            }
-            
-            for future in concurrent.futures.as_completed(future_to_id):
-                track_id = future_to_id[future]
-                try:
-                    if future.result():
-                        success += 1
-                    else:
-                        failed += 1
-                except Exception:
-                    failed += 1
+        for i, track_id in enumerate(track_ids, 1):
+            print(f"\n[{i}/{len(track_ids)}] ", end="")
+            if self.download_track(track_id):
+                success += 1
+            else:
+                failed += 1
         
         print(f"\nPlaylist '{playlist_name}' download complete!")
         print(f"✓ Successfully downloaded: {success}")
@@ -217,20 +191,59 @@ if __name__ == "__main__":
     db = SimpleMusicDB()
     downloader = SimpleDownloader(db)
     
-    print("=== Simple YouTube Downloader ===\n")
+    print("=== Simple YouTube Downloader Test ===\n")
     
-    # # Test 1: Download a single track (assuming track ID 1 exists)
-    # print("1. Testing single track download...")
-    # downloader.download_track(1)
-    #
-    # print("\n" + "="*50 + "\n")
-    #
-    # Test 2: Bulk download all tracks
-    print("2. Testing bulk download of all tracks...")
-    success, failed = downloader.download_all_tracks(max_workers=2)
+    # Clear old test data
+    print("Clearing old test data...")
+    cursor = db.conn.cursor()
+    cursor.execute("DELETE FROM playlist_tracks")
+    cursor.execute("DELETE FROM tracks")
+    cursor.execute("DELETE FROM playlists")
+    db.conn.commit()
+    print("Database cleared\n")
     
-    print("\n" + "="*50 + "\n")
+    # Create a test playlist
+    playlist_id = db.add_playlist("Test Playlist")
+    print(f"Created playlist ID: {playlist_id}")
     
-    # Test 3: Download a playlist (assuming playlist ID 1 exists)
-    print("3. Testing playlist download...")
-    downloader.download_playlist(1, max_workers=2)
+    # Add test songs
+    test_songs = [
+        ("Heavener", "Invent Animate"),
+        ("Icarus", "fromjoy")
+    ]
+    
+    added_tracks = []
+    for title, artist in test_songs:
+        track_id = db.add_track_to_playlist(
+            playlist_id=playlist_id,
+            title=title,
+            artist=artist,
+            duration=0,  # Duration doesn't matter for download
+            icon=None
+        )
+        added_tracks.append(track_id)
+        print(f"Added: {artist} - {title} (ID: {track_id})")
+    
+    print(f"\nAdded {len(added_tracks)} tracks to the database")
+    print("\n" + "="*50)
+    
+    # Test bulk download
+    print("\nStarting bulk download...")
+    success, failed = downloader.download_all_tracks()
+    
+    print("\n" + "="*50)
+    
+    # Show final status
+    print("\nFinal status:")
+    cursor = db.conn.cursor()
+    cursor.execute("SELECT id, title, artist, path_mp3 FROM tracks")
+    all_tracks = cursor.fetchall()
+    
+    for track_id, title, artist, path_mp3 in all_tracks:
+        if path_mp3 and os.path.exists(path_mp3):
+            file_size = os.path.getsize(path_mp3) / 1024 / 1024
+            print(f"✓ {artist} - {title} ({file_size:.1f} MB)")
+        else:
+            print(f"✗ {artist} - {title}: Not downloaded")
+    
+    print(f"\n✅ Test completed!")

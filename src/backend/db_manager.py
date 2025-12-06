@@ -81,6 +81,7 @@ class SimpleMusicDB:
     # the main operation done after the user chooses his playlists
     def add_track_to_playlist(self, playlist_id, title, artist, duration, icon):
         cursor = self.conn.cursor()
+
         
         cursor.execute("SELECT id FROM tracks WHERE title = ? AND artist = ?", (title, artist))
         existing_track = cursor.fetchone()
@@ -95,13 +96,14 @@ class SimpleMusicDB:
             if cursor.fetchone():
                 print(f"Track '{title}' by '{artist}' is already in playlist")
                 return track_id
-            else:
-                cursor.execute(
-                    "INSERT INTO tracks (title, artist, duration, icon, reference_count) VALUES (?, ?, ?, ?, ?)",
-                    (title, artist, duration, icon, 1)
-                )
-                track_id = cursor.lastrowid
+        else:
+            cursor.execute(
+                "INSERT INTO tracks (title, artist, duration, icon, reference_count) VALUES (?, ?, ?, ?, ?)",
+                (title, artist, duration, icon, 1)
+            )
+            track_id = cursor.lastrowid
         
+        # This should be here, not inside any if/else
         cursor.execute(
             "INSERT INTO playlist_tracks (playlist_id, track_id) VALUES (?, ?)",
             (playlist_id, track_id)
@@ -119,7 +121,6 @@ class SimpleMusicDB:
 
         self.conn.commit()
         return track_id
-
 
     # before adding the tracks to the playlists we add the playlists themselves
     def add_playlist(self, name, icon=None):
