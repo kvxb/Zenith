@@ -135,3 +135,11 @@ class PlaylistStateManager:
         if playlist is None:
             return
         playlist.name = new_name
+
+    def create_empty_playlist(self) -> PlaylistModel:
+        """Create and return a new empty playlist"""
+        import uuid
+
+        new_id = str(uuid.uuid4())
+        new_playlist = PlaylistModel(playlist_id=new_id, name="New Playlist", tracks=[])
+        return new_playlist

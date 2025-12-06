@@ -24,7 +24,19 @@ class PlaylistTabArea(ft.Container):
         return ft.Row(
             controls=[
                 ft.TextField(value="My Library", expand=True),
-                ft.IconButton(
+                ft.PopupMenuButton(
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Create Empty Playlist",
+                            icon=ft.Icons.PLAYLIST_ADD,
+                            on_click=lambda e: self._on_add_empty_playlist(),
+                        ),
+                        ft.PopupMenuItem(
+                            text="Import from Spotify",
+                            icon=ft.Icons.LIBRARY_MUSIC,
+                            on_click=lambda e: self._on_add_from_spotify(),
+                        ),
+                    ],
                     icon=ft.Icons.ADD,
                     tooltip="Add Playlist",
                 ),
@@ -78,12 +90,30 @@ class PlaylistTabArea(ft.Container):
         return self.play_button
 
     def _body_header(self):
+        self.menu_button = ft.PopupMenuButton(
+            items=[
+                ft.PopupMenuItem(
+                    text="Paste Track",
+                    icon=ft.Icons.CONTENT_PASTE,
+                    on_click=lambda e: self._on_paste_track(),
+                    disabled=True,  # Will be enabled when there's a track in clipboard
+                ),
+                ft.PopupMenuItem(),  # Divider
+                ft.PopupMenuItem(
+                    text="Delete Playlist",
+                    icon=ft.Icons.DELETE,
+                    on_click=lambda e: self._on_delete_playlist(),
+                ),
+            ],
+            icon=ft.Icons.MORE_VERT,
+        )
+
         return ft.Row(
             controls=[
                 self._play_button(),
                 ft.IconButton(icon=ft.Icons.SHUFFLE, on_click=self._on_shuffle),
                 ft.Container(expand=True),
-                ft.IconButton(icon=ft.Icons.UPLOAD_FILE),
+                self.menu_button,
             ],
             alignment=ft.MainAxisAlignment.START,
         )
@@ -113,6 +143,11 @@ class PlaylistTabArea(ft.Container):
         self.on_search = lambda query: None
         self.on_drop = lambda playlist_id, track_id: None
         self.on_focus_change = lambda playlist_id: None
+        self.on_delete_playlist = lambda playlist_id: None
+        self.on_paste_track = lambda playlist_id: None
+        self.on_add_empty_playlist = lambda: None
+        self.on_add_from_spotify = lambda: None
+        self.on_rename_playlist = lambda playlist_id, new_name: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -153,6 +188,9 @@ class PlaylistTabArea(ft.Container):
         playlist_card.on_drop = lambda track_id: self.on_drop(
             playlist_card.id, track_id
         )
+        playlist_card.on_name_change = lambda new_name: self.on_rename_playlist(
+            playlist_card.id, new_name
+        )
         playlist.on_reorder_callback = (
             lambda id, old_idx, new_idx: self._on_reorder_internal(id, old_idx, new_idx)
         )
@@ -162,6 +200,9 @@ class PlaylistTabArea(ft.Container):
 
         # Hide playlist by default (show only when card is clicked)
         playlist.visible = False
+
+        if self.page and len(self.playlist_stack.controls) == 1:
+            self.toggle_body_header(True)
 
     def remove_playlist(self, playlist_id: str):
         card_ui = self.get_playslist_card(playlist_id)
@@ -174,6 +215,9 @@ class PlaylistTabArea(ft.Container):
 
         if playlist_id == self._active_tab_uuid:
             self.focus("first")
+
+        if self.is_empty():
+            self.toggle_body_header(False)
 
         self.update()
 
@@ -213,14 +257,13 @@ class PlaylistTabArea(ft.Container):
             first_control = self.playlist_card_list.controls[0]
             if isinstance(first_control, PlaylistCard):
                 self.focus(first_control.id)
-            else:
-                return
-        elif playlist_id == "last":
+            return
+
+        if playlist_id == "last":
             last_control = self.playlist_card_list.controls[-1]
             if isinstance(last_control, PlaylistCard):
                 self.focus(last_control.id)
-            else:
-                return
+            return
 
         # Remove highlight from previous active card
         if self._active_tab_uuid:
@@ -265,6 +308,32 @@ class PlaylistTabArea(ft.Container):
         if playlist is not None:
             playlist.shuffle()
 
+    def _on_delete_playlist(self):
+        """Handle delete playlist from menu"""
+        playlist_id = self._active_tab_uuid
+        if playlist_id:
+            self.on_delete_playlist(playlist_id)
+
+    def _on_paste_track(self):
+        """Handle paste track from menu"""
+        playlist_id = self._active_tab_uuid
+        if playlist_id:
+            self.on_paste_track(playlist_id)
+
+    def _on_add_empty_playlist(self):
+        """Handle create empty playlist from menu"""
+        self.on_add_empty_playlist()
+
+    def _on_add_from_spotify(self):
+        """Handle import from Spotify from menu"""
+        self.on_add_from_spotify()
+
+    def enable_paste_track(self, enabled: bool):
+        """Enable or disable the paste track menu item"""
+        if hasattr(self, "menu_button") and self.menu_button.items:
+            self.menu_button.items[0].disabled = not enabled
+            self.menu_button.update()
+
     def _on_loop(self, e):
         self.on_loop()
 
@@ -275,12 +344,16 @@ class PlaylistTabArea(ft.Container):
     def on_play_button_click(self, e):
         self.on_play(None)
 
-    def update_play_button_state(self, is_playing: bool):
+    def toggle_play_button(self, is_playing: bool):
         if is_playing:
             self.play_button.icon = ft.Icons.PAUSE
         else:
             self.play_button.icon = ft.Icons.PLAY_ARROW
         self.play_button.update()
+
+    def toggle_body_header(self, visible: bool):
+        self.body.controls[1].visible = visible
+        self.body.update()
 
     def is_empty(self) -> bool:
         return len(self.playlist_stack.controls) == 0
@@ -293,7 +366,7 @@ class PlaylistTabArea(ft.Container):
         is_playing: bool,
     ):
         if active_playlist_model.id == self._active_tab_uuid:
-            self.update_play_button_state(is_playing)
+            self.toggle_play_button(is_playing)
 
         new_track = active_playlist_model.get_active_track()
         if new_track is None:

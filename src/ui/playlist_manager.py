@@ -189,12 +189,18 @@ class PlaylistManager:
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
         tab_area.on_drop = self.on_track_drop
-        tab_area.on_focus_change = (
-            lambda playlist_id: self.tab_area.update_play_button_state(
-                playlist_id == self.state_manager.active_playlist_id
-                and self.playback_controller.is_playing
+        tab_area.on_focus_change = lambda playlist_id: self.tab_area.toggle_play_button(
+            playlist_id == self.state_manager.active_playlist_id
+            and self.playback_controller.is_playing
+        )
+        tab_area.on_rename_playlist = lambda playlist_id, new_name: (
+            self.state_manager.rename_playlist(
+                playlist_id, new_name if new_name != "" else "Untitled Playlist"
             )
         )
+        tab_area.on_add_empty_playlist = lambda: self.add_playlist()
+
+        tab_area.on_delete_playlist = self.remove_playlist
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
@@ -347,17 +353,36 @@ class PlaylistManager:
 
     def remove_playlist(self, playlist_id: str):
         """Remove a playlist from the manager"""
+        print(f"Removing playlist {playlist_id}")
+
         playlist = self.state_manager.get_playlist(playlist_id)
         if playlist is None:
             print(f"Playlist {playlist_id} not found")
             return
 
         tab_area = self.tab_area
-        focused_playlist = tab_area.get_active_playlist()
         active_playlist = self.state_manager.get_active_playlist()
 
         if active_playlist == playlist:
             self.forget()
 
-        if focused_playlist == playlist:
-            tab_area.remove_playlist(playlist_id)
+        tab_area.remove_playlist(playlist_id)
+        self.state_manager.remove_playlist(playlist_id)
+
+    def add_playlist(self, playlist: PlaylistModel | None = None):
+        """Add a new playlist to the manager"""
+        if playlist is None:
+            playlist = self.state_manager.create_empty_playlist()
+            if playlist is None:
+                return
+
+        print(f"Adding new playlist {playlist.name}")
+
+        self.state_manager.add_playlist(playlist)
+        card_ui = UiMapper.playlist_card_from_model(playlist)
+        playlist_ui = UiMapper.playlist_from_model(playlist)
+
+        self.tab_area.add_playlist(card_ui, playlist_ui)
+        self.tab_area.toggle_body_header(True)
+
+        self.tab_area.update()
