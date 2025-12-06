@@ -6,7 +6,7 @@ from ui.playlist_state_manager import PlaylistStateManager
 from backend import PlaylistModel, TrackModel
 from ui.ui_mapper import UiMapper
 
-# from backend.music_manager import MusicManager
+from backend.music_manager import MusicManager
 
 
 class PlaylistManager:
@@ -17,7 +17,7 @@ class PlaylistManager:
         self.playback_controller = PlaybackController(self.audio_manager)
         self.tab_area = UiMapper.playlist_tab_area_from_models(playlists)
 
-        # self.music_manager = MusicManager()
+        self.music_manager = MusicManager()
         self.event_bindings()
 
     def add_to_page(self, page: ft.Page):
@@ -427,7 +427,7 @@ class PlaylistManager:
         self.tab_area.update()
 
     def get_from_spotify(self):
-        return
+        # return
         """Fetch playlists from Spotify"""
         print("Fetching playlists from Spotify")
         playlists = self.music_manager.sync_all()

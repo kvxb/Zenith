@@ -1,7 +1,8 @@
 import spotipy
 from spotipy.oauth2 import SpotifyPKCE
-import config
-from db_manager import SimpleMusicDB
+from . import config
+from .db_manager import SimpleMusicDB
+
 
 class SpotifyService:
     """
@@ -9,7 +10,6 @@ class SpotifyService:
     """
 
     SCOPE = "playlist-read-private playlist-read-collaborative user-library-read"
-    
 
     def __init__(self, client_id: str, redirect_uri: str, db: SimpleMusicDB):
         self.client_id = client_id
@@ -38,13 +38,13 @@ class SpotifyService:
         except Exception as e:
             print(f"❌ PKCE authentication failed: {e}")
             raise
-    
+
     def get_client(self) -> spotipy.Spotify:
         """Returns authenticated client"""
         if self._spotify_client is None:
             raise RuntimeError("Not authenticated. Call authenticate() first.")
         return self._spotify_client
-    
+
     def get_current_user(self) -> dict:
         """Returns current user profile"""
         client = self.get_client()
@@ -54,137 +54,138 @@ class SpotifyService:
             "id": user_data.get("id", "Unknown"),
             "email": user_data.get("email", "Not provided"),
         }
-    
+
     def import_all_playlists(self) -> dict:
         """
         Import all user's playlists and their tracks to database.
-        
+
         Returns:
             Dictionary with import statistics
         """
         client = self.get_client()
-        user_id = self.get_current_user()['id']
-        
+        user_id = self.get_current_user()["id"]
+
         print("📥 Fetching playlists from Spotify...")
-        
+
         # Get all playlists
         playlists = []
         results = client.current_user_playlists(limit=50)
-        
+
         while results:
-            playlists.extend(results['items'])
-            if results['next']:
+            playlists.extend(results["items"])
+            if results["next"]:
                 results = client.next(results)
             else:
                 results = None
-        
+
         print(f"📋 Found {len(playlists)} playlists")
-        
+
         stats = {
-            'total_playlists': len(playlists),
-            'playlists_imported': 0,
-            'tracks_imported': 0,
-            'errors': 0
+            "total_playlists": len(playlists),
+            "playlists_imported": 0,
+            "tracks_imported": 0,
+            "errors": 0,
         }
-        
+
         # Import each playlist
         for playlist in playlists:
             try:
                 playlist_stats = self._import_playlist(playlist)
-                stats['playlists_imported'] += 1
-                stats['tracks_imported'] += playlist_stats['tracks_imported']
-                stats['errors'] += playlist_stats['errors']
+                stats["playlists_imported"] += 1
+                stats["tracks_imported"] += playlist_stats["tracks_imported"]
+                stats["errors"] += playlist_stats["errors"]
             except Exception as e:
                 print(f"❌ Error importing playlist '{playlist['name']}': {e}")
-                stats['errors'] += 1
-        
+                stats["errors"] += 1
+
         return stats
-    
+
     def _import_playlist(self, playlist: dict) -> dict:
         """
         Import a single playlist and its tracks.
         """
-        playlist_name = playlist['name']
-        playlist_id = playlist['id']
-        
+        playlist_name = playlist["name"]
+        playlist_id = playlist["id"]
+
         print(f"\n🎵 Importing playlist: {playlist_name}")
-        
+
         # Get playlist details
         try:
             playlist_details = self.get_client().playlist(
-                playlist_id,
-                fields="name,images,tracks.total"
+                playlist_id, fields="name,images,tracks.total"
             )
         except Exception as e:
             print(f"   ❌ Failed to get playlist details: {e}")
-            return {'tracks_imported': 0, 'errors': 1}
-        
+            return {"tracks_imported": 0, "errors": 1}
+
         # Get playlist cover image
         icon_url = None
-        if playlist_details.get('images'):
-            icon_url = playlist_details['images'][0]['url'] if playlist_details['images'][0]['url'] else None
-        
+        if playlist_details.get("images"):
+            icon_url = (
+                playlist_details["images"][0]["url"]
+                if playlist_details["images"][0]["url"]
+                else None
+            )
+
         # Add playlist to database
-        db_playlist_id = self.db.add_playlist(
-            name=playlist_name,
-            icon=icon_url
-        )
-        
+        db_playlist_id = self.db.add_playlist(name=playlist_name, icon=icon_url)
+
         print(f"   Created database playlist ID: {db_playlist_id}")
-        
+
         # Get tracks with manual pagination
         tracks = []
         offset = 0
         limit = 100
-        
+
         try:
             while True:
                 results = self.get_client().playlist_items(
-                    playlist_id,
-                    limit=limit,
-                    offset=offset,
-                    additional_types=['track']
+                    playlist_id, limit=limit, offset=offset, additional_types=["track"]
                 )
-                
-                if not results or not results.get('items'):
+
+                if not results or not results.get("items"):
                     break
-                
-                for item in results['items']:
-                    if item and item.get('track'):
-                        tracks.append(item['track'])
-                
+
+                for item in results["items"]:
+                    if item and item.get("track"):
+                        tracks.append(item["track"])
+
                 # Check if we got all tracks
-                if len(results['items']) < limit:
+                if len(results["items"]) < limit:
                     break
-                    
+
                 offset += limit
-                
+
         except Exception as e:
             print(f"   ❌ Error fetching tracks: {e}")
             import traceback
+
             traceback.print_exc()
-            return {'tracks_imported': 0, 'errors': 1}
-        
+            return {"tracks_imported": 0, "errors": 1}
+
         print(f"   Found {len(tracks)} tracks")
-        
-        stats = {
-            'tracks_imported': 0,
-            'errors': 0
-        }
-        
+
+        stats = {"tracks_imported": 0, "errors": 0}
+
         for i, track in enumerate(tracks, 1):
             try:
                 # Extract track info
-                title = track['name']
-                artists = ", ".join([artist['name'] for artist in track['artists']])
-                duration = track['duration_ms'] // 1000
-                album = track.get('album', {}).get('name', '') if track.get('album') else ''  # ADD THIS
-                
+                title = track["name"]
+                artists = ", ".join([artist["name"] for artist in track["artists"]])
+                duration = track["duration_ms"] // 1000
+                album = (
+                    track.get("album", {}).get("name", "") if track.get("album") else ""
+                )  # ADD THIS
+
                 # Get album cover
                 icon_url = None
-                if track.get('album') and track['album'].get('images'):
-                    icon_url = track['album']['images'][0]['url'] if track['album']['images'][0]['url'] else None
-                
+                if track.get("album") and track["album"].get("images"):
+                    icon_url = (
+                        track["album"]["images"][0]["url"]
+                        if track["album"]["images"][0]["url"]
+                        else None
+                    )
+
                 # Add to database WITH ALBUM
                 self.db.add_track_to_playlist(
                     playlist_id=db_playlist_id,
@@ -192,23 +193,23 @@ class SpotifyService:
                     artist=artists,
                     album=album,  # ADD THIS
                     duration=duration,
-                    icon=icon_url
+                    icon=icon_url,
                 )
-                
-                stats['tracks_imported'] += 1
-                
+
+                stats["tracks_imported"] += 1
+
                 if i % 10 == 0:
                     print(f"   Imported {i}/{len(tracks)} tracks...")
-                    
+
             except Exception as e:
                 print(f"   ❌ Error importing track {i}: {e}")
-                stats['errors'] += 1
-        
+                stats["errors"] += 1
+
         # Update playlist stats
         self._update_playlist_stats(db_playlist_id)
-        
+
         print(f"   ✅ Imported {stats['tracks_imported']} tracks")
-        return stats    
+        return stats
 
     # In spotify_service.py, update the _import_track method:
 
@@ -217,112 +218,117 @@ class SpotifyService:
         Import a single track to database.
         """
         # Extract track info
-        title = track['name']
-        artists = ", ".join([artist['name'] for artist in track['artists']])
-        duration = track['duration_ms'] // 1000
+        title = track["name"]
+        artists = ", ".join([artist["name"] for artist in track["artists"]])
+        duration = track["duration_ms"] // 1000
         # NEW: Get album name
-        album = track.get('album', {}).get('name', '') if track.get('album') else ''
-        
+        album = track.get("album", {}).get("name", "") if track.get("album") else ""
+
         # Get album cover
         icon_url = None
-        if track.get('album') and track['album'].get('images'):
-            icon_url = track['album']['images'][0]['url'] if track['album']['images'][0]['url'] else None
-        
+        if track.get("album") and track["album"].get("images"):
+            icon_url = (
+                track["album"]["images"][0]["url"]
+                if track["album"]["images"][0]["url"]
+                else None
+            )
+
         # Update call to include album
         track_id = self.db.add_track_to_playlist(
             playlist_id=db_playlist_id,
             title=title,
             artist=artists,
-            album=album,        # NEW
+            album=album,  # NEW
             duration=duration,
-            icon=icon_url
+            icon=icon_url,
         )
-        
-        return track_id    
+
+        return track_id
 
     def _update_playlist_stats(self, db_playlist_id: int):
         """
         Update song count and total duration for a playlist.
         """
         cursor = self.db.conn.cursor()
-        
+
         # Get total tracks and duration for this playlist
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT COUNT(pt.track_id), SUM(t.duration)
             FROM playlist_tracks pt
             JOIN tracks t ON pt.track_id = t.id
             WHERE pt.playlist_id = ?
-        """, (db_playlist_id,))
-        
+        """,
+            (db_playlist_id,),
+        )
+
         result = cursor.fetchone()
         song_count = result[0] or 0
         total_duration = result[1] or 0
-        
+
         # Update playlist
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE playlists 
             SET song_count = ?, total_duration = ?
             WHERE id = ?
-        """, (song_count, total_duration, db_playlist_id))
-        
+        """,
+            (song_count, total_duration, db_playlist_id),
+        )
+
         self.db.conn.commit()
-    
+
     def import_saved_tracks(self) -> dict:
         """
         Import user's saved tracks (liked songs) as a playlist.
-        
+
         Returns:
             Dictionary with import statistics
         """
         client = self.get_client()
-        
+
         print("📥 Fetching saved tracks from Spotify...")
-        
+
         # Create a playlist for saved tracks
-        db_playlist_id = self.db.add_playlist(
-            name="Liked Songs",
-            icon=None
-        )
-        
+        db_playlist_id = self.db.add_playlist(name="Liked Songs", icon=None)
+
         # Get all saved tracks
         tracks = []
         results = client.current_user_saved_tracks(limit=50)
-        
+
         while results:
-            for item in results['items']:
-                if item['track']:
-                    tracks.append(item['track'])
-            
-            if results['next']:
+            for item in results["items"]:
+                if item["track"]:
+                    tracks.append(item["track"])
+
+            if results["next"]:
                 results = client.next(results)
             else:
                 results = None
-        
+
         print(f"📋 Found {len(tracks)} saved tracks")
-        
-        stats = {
-            'tracks_imported': 0,
-            'errors': 0
-        }
-        
+
+        stats = {"tracks_imported": 0, "errors": 0}
+
         # Import each track
         for i, track in enumerate(tracks, 1):
             try:
                 self._import_track(track, db_playlist_id)
-                stats['tracks_imported'] += 1
-                
+                stats["tracks_imported"] += 1
+
                 if i % 10 == 0:
                     print(f"   Imported {i}/{len(tracks)} tracks...")
-                    
+
             except Exception as e:
                 print(f"   ❌ Error importing track {i}: {e}")
-                stats['errors'] += 1
-        
+                stats["errors"] += 1
+
         # Update playlist stats
         self._update_playlist_stats(db_playlist_id)
-        
+
         print(f"✅ Imported {stats['tracks_imported']} saved tracks")
         return stats
+
 
 # Example usage
 # if __name__ == "__main__":
