@@ -1,0 +1,8 @@
+implement multithreaded download
+add windows file system support
+fix fragile path for /src/assets 
+fix spotify development stuff
+add database methods for order switching and other QOL
+stop double importing of playlists maybe
+icon support
+
