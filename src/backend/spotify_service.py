@@ -171,24 +171,25 @@ class SpotifyService:
             'errors': 0
         }
         
-        # Import each track
         for i, track in enumerate(tracks, 1):
             try:
                 # Extract track info
                 title = track['name']
                 artists = ", ".join([artist['name'] for artist in track['artists']])
-                duration = track['duration_ms'] // 1000  # ms to seconds
+                duration = track['duration_ms'] // 1000
+                album = track.get('album', {}).get('name', '') if track.get('album') else ''  # ADD THIS
                 
                 # Get album cover
                 icon_url = None
                 if track.get('album') and track['album'].get('images'):
                     icon_url = track['album']['images'][0]['url'] if track['album']['images'][0]['url'] else None
                 
-                # Add to database
+                # Add to database WITH ALBUM
                 self.db.add_track_to_playlist(
                     playlist_id=db_playlist_id,
                     title=title,
                     artist=artists,
+                    album=album,  # ADD THIS
                     duration=duration,
                     icon=icon_url
                 )
@@ -208,38 +209,36 @@ class SpotifyService:
         print(f"   ✅ Imported {stats['tracks_imported']} tracks")
         return stats    
 
+    # In spotify_service.py, update the _import_track method:
+
     def _import_track(self, track: dict, db_playlist_id: int) -> int:
         """
         Import a single track to database.
-        
-        Args:
-            track: Spotify track object
-            db_playlist_id: Database playlist ID
-            
-        Returns:
-            Database track ID
         """
         # Extract track info
         title = track['name']
         artists = ", ".join([artist['name'] for artist in track['artists']])
-        duration = track['duration_ms'] // 1000  # Convert ms to seconds
+        duration = track['duration_ms'] // 1000
+        # NEW: Get album name
+        album = track.get('album', {}).get('name', '') if track.get('album') else ''
         
-        # Get album cover if available
+        # Get album cover
         icon_url = None
         if track.get('album') and track['album'].get('images'):
             icon_url = track['album']['images'][0]['url'] if track['album']['images'][0]['url'] else None
         
-        # Add track to database
+        # Update call to include album
         track_id = self.db.add_track_to_playlist(
             playlist_id=db_playlist_id,
             title=title,
             artist=artists,
+            album=album,        # NEW
             duration=duration,
             icon=icon_url
         )
         
-        return track_id
-    
+        return track_id    
+
     def _update_playlist_stats(self, db_playlist_id: int):
         """
         Update song count and total duration for a playlist.
