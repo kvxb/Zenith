@@ -1,5 +1,5 @@
 import flet as ft
-from typing import Optional
+from typing import Optional, Callable
 from .playlist_card import PlaylistCard
 from .playlist import Playlist
 from .now_playing import NowPlaying
@@ -360,6 +360,53 @@ class PlaylistTabArea(ft.Container):
 
     def is_empty(self) -> bool:
         return len(self.playlist_stack.controls) == 0
+
+    def _show_confirmation_dialog(self, title: str, message: str, on_confirm: Callable):
+        """Show a confirmation dialog with the given title and message"""
+        if not self.page:
+            return
+
+        def confirm_delete(e):
+            on_confirm()
+            dialog.open = False
+            if self.page:
+                self.page.update()
+
+        def cancel_delete(e):
+            dialog.open = False
+            if self.page:
+                self.page.update()
+
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("Cancel", on_click=cancel_delete),
+                ft.TextButton("Delete", on_click=confirm_delete),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        self.page.overlay.append(dialog)
+        dialog.open = True
+        self.page.update()
+
+    def confirm_delete_playlist(self, playlist: PlaylistModel, on_confirm: Callable):
+        """Show confirmation dialog for deleting a playlist"""
+        self._show_confirmation_dialog(
+            "Delete Playlist",
+            f"Are you sure you want to delete '{playlist.name}'? This will remove all {playlist.size()} tracks from this playlist.",
+            on_confirm,
+        )
+
+    def confirm_delete_track(self, track: TrackModel, on_confirm: Callable):
+        """Show confirmation dialog for deleting a track"""
+        self._show_confirmation_dialog(
+            "Delete Track",
+            f"Are you sure you want to delete '{track.title}' from this playlist?",
+            on_confirm,
+        )
 
     def update_ui_on_play(
         self,

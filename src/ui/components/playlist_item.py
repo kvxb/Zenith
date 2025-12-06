@@ -65,32 +65,49 @@ class PlaylistItem(ft.Container):
                     ],
                     width=40,
                 ),
-                ft.Draggable(
-                    group="playlist_tracks",
-                    content=name_author_column,
-                    content_feedback=self.content_feedback(),
-                    content_when_dragging=ft.Container(
-                        content=name_author_column,
-                        opacity=0.3,
-                    ),
-                    data=track_id,
-                ),
                 ft.Container(
+                    content=ft.Draggable(
+                        group="playlist_tracks",
+                        content=name_author_column,
+                        content_feedback=self.content_feedback(),
+                        content_when_dragging=ft.Container(
+                            content=name_author_column,
+                            opacity=0.3,
+                        ),
+                        data=track_id,
+                    ),
                     expand=True,
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE,
                 ),
                 self._album_text(),
                 self._duration_text(),
+                ft.Container(width=20),  # Right margin for menu button space
+            ],
+            spacing=10,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        self.content = ft.Stack(
+            controls=[
+                ft.GestureDetector(
+                    content=row_data,
+                    on_enter=self._on_enter_event,
+                    on_exit=self._on_exit_event,
+                    on_tap=lambda e: self.on_card_click(self.id),
+                ),
                 ft.Container(
-                    content=self.menu_button,
-                    margin=ft.margin.only(right=10),
+                    content=ft.GestureDetector(
+                        content=self.menu_button,
+                        on_enter=self._on_enter_event,
+                        on_exit=self._on_exit_event,
+                    ),
+                    right=10,
+                    top=0,
+                    bottom=0,
+                    alignment=ft.alignment.center,
                 ),
             ],
-        )
-        self.content = ft.GestureDetector(
-            content=row_data,
-            on_enter=self._on_enter_event,
-            on_exit=self._on_exit_event,
-            on_tap=lambda e: self.on_card_click(self.id),
+            expand=True,
         )
 
         # Container styling
@@ -127,10 +144,23 @@ class PlaylistItem(ft.Container):
         )
 
     def _album_text(self):
-        return ft.Text(self.album, size=18, color=ft.Colors.GREY_700, width=150)
+        return ft.Text(
+            self.album,
+            size=18,
+            color=ft.Colors.GREY_700,
+            width=150,
+            overflow=ft.TextOverflow.ELLIPSIS,
+            no_wrap=True,
+        )
 
     def _duration_text(self):
-        return ft.Text(self.duration, size=18, color=ft.Colors.GREY_600, width=60)
+        return ft.Text(
+            self.duration,
+            size=18,
+            color=ft.Colors.GREY_600,
+            width=60,
+            no_wrap=True,
+        )
 
     def content_feedback(self):
         return ft.Icon(
@@ -154,9 +184,7 @@ class PlaylistItem(ft.Container):
     def _on_enter_event(self, e):
         self.menu_button.icon_color = ft.Colors.WHITE
         self.menu_button.update()
-        return
 
     def _on_exit_event(self, e):
         self.menu_button.icon_color = ft.Colors.TRANSPARENT
         self.menu_button.update()
-        return

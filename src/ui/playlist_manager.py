@@ -337,14 +337,16 @@ class PlaylistManager:
             print(f"Playlist {playlist_id} not found")
             return
 
-        tab_area = self.tab_area
-        active_playlist = self.state_manager.get_active_playlist()
+        def on_confirm():
+            active_playlist = self.state_manager.get_active_playlist()
 
-        if active_playlist == playlist:
-            self.forget()
+            if active_playlist == playlist:
+                self.forget()
 
-        tab_area.remove_playlist(playlist_id)
-        self.state_manager.remove_playlist(playlist_id)
+            self.tab_area.remove_playlist(playlist_id)
+            self.state_manager.remove_playlist(playlist_id)
+
+        self.tab_area.confirm_delete_playlist(playlist, on_confirm)
 
     def add_playlist(self, playlist: PlaylistModel | None = None):
         """Add a new playlist to the manager"""
@@ -370,13 +372,17 @@ class PlaylistManager:
             return
 
         playlist, track = track_info
-        # Remove from backend
-        playlist.remove_track(track)
 
-        # Remove from UI
-        playlist_ui = self.tab_area.get_playlist(playlist_id)
-        if playlist_ui is not None:
-            playlist_ui.remove_track_item(track_id)
+        def on_confirm():
+            # Remove from backend
+            playlist.remove_track(track)
+
+            # Remove from UI
+            playlist_ui = self.tab_area.get_playlist(playlist_id)
+            if playlist_ui is not None:
+                playlist_ui.remove_track_item(track_id)
+
+        self.tab_area.confirm_delete_track(track, on_confirm)
 
     def on_copy_track(self, playlist_id: str, track_id: str):
         """Copy a track to clipboard"""
