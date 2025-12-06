@@ -28,7 +28,7 @@ company = "Flet"
 copyright = "Copyright (C) 2025 by Flet"
 
 [tool.flet.app]
-path = "."
+path = "src"
 
 [tool.uv]
 dev-dependencies = [

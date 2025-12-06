@@ -159,6 +159,8 @@ def main(page: ft.Page):
     playlist_manager = PlaylistManager(test_playlists)
     playlist_manager.add_to_page(page)
 
+    page.update()
+
 
 if __name__ == "__main__":
     ft.app(main, assets_dir="assets", port=8550)
