@@ -274,7 +274,7 @@ class MusicManager:
             # Get tracks for this playlist
             cursor.execute(
                 """
-                SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3
+                SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3, pt.position
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
@@ -286,7 +286,7 @@ class MusicManager:
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3 in tracks:
+            for track_id, title, artist, album, duration, path_mp3, position in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
@@ -294,6 +294,7 @@ class MusicManager:
                     album=album or "",
                     duration=duration,
                     file_path=path_mp3 or "",
+                    position = position
                 )
                 track_models.append(track_model)
 
@@ -321,7 +322,7 @@ class MusicManager:
         for playlist_id, playlist_name in playlists:
             cursor.execute(
                 """
-                SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3
+                SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3, pt.position
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
@@ -333,7 +334,7 @@ class MusicManager:
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3 in tracks:
+            for track_id, title, artist, album, duration, path_mp3, position in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
@@ -341,6 +342,7 @@ class MusicManager:
                     album=album or "",
                     duration=duration,
                     file_path=path_mp3 or "",
+                    position = position
                 )
                 track_models.append(track_model)
 
