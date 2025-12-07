@@ -1,3 +1,5 @@
+from typing import Optional, List, Dict
+
 from .db_manager import SimpleMusicDB
 from .spotify_service import SpotifyService
 from .track_download import SimpleDownloader
@@ -342,14 +344,14 @@ class MusicManager:
         return str(result[0]) if result else None
 
     def get_playlist_id(self, name: str) -> Optional[str]:
-    """Find playlist ID by name."""
-    conn = self.db._get_connection()
-    cursor = conn.cursor()
+        """Find playlist ID by name."""
+        conn = self.db._get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id FROM playlists WHERE name = ?", (name,))
+        result = cursor.fetchone()
     
-    cursor.execute("SELECT id FROM playlists WHERE name = ?", (name,))
-    result = cursor.fetchone()
-    
-    return str(result[0]) if result else None
+        return str(result[0]) if result else None
 
     def get_all_playlist_ids(self) -> dict:
         """Get all playlist names and their IDs."""
