@@ -178,9 +178,9 @@ class PlaylistTabArea(ft.Container):
         self.on_play = lambda playlist_id, track_id: None
         self.on_reorder = lambda id, old_idx, new_idx: None
         self.on_loop_playlist = lambda playlist_id: None
-        self.on_loop_track = lambda track_id: None
+        self.on_loop_track = lambda playlist_id, track_id: None
         self.on_search = lambda query: None
-        self.on_drop = lambda playlist_id, track_id: None
+        self.on_drop = lambda source_playlist_id, playlist_id, track_id: None
         self.on_focus_change = lambda playlist_id: None
         self.on_delete_playlist = lambda playlist_id: None
         self.on_paste_track = lambda playlist_id: None
@@ -231,7 +231,7 @@ class PlaylistTabArea(ft.Container):
             playlist_card.id, track_id
         )
         playlist_card.on_drop = lambda track_id: self.on_drop(
-            playlist_card.id, track_id
+            self._active_tab_uuid, playlist_card.id, track_id
         )
         playlist_card.on_name_change = lambda new_name: self.on_rename_playlist(
             playlist_card.id, new_name
@@ -245,7 +245,9 @@ class PlaylistTabArea(ft.Container):
         playlist.on_copy_track = lambda track_id: self.on_copy_track(
             playlist_card.id, track_id
         )
-        playlist.on_loop_track = lambda track_id: self.on_loop_track(track_id)
+        playlist.on_loop_track = lambda track_id: self.on_loop_track(
+            playlist_card.id, track_id
+        )
         # Add to controls
         self.playlist_card_list.controls.append(playlist_card)
         self.playlist_stack.controls.append(playlist)
@@ -451,7 +453,10 @@ class PlaylistTabArea(ft.Container):
         dialog = ft.AlertDialog(
             modal=True,
             title=ft.Text(title),
-            content=ft.Text(message),
+            content=ft.Container(
+                content=ft.Text(message),
+                width=400,
+            ),
             actions=[
                 ft.TextButton("Cancel", on_click=cancel_delete),
                 ft.TextButton("Delete", on_click=confirm_delete),
