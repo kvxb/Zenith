@@ -127,8 +127,8 @@ class MusicManager:
             print(f"Error removing track from playlist: {e}")
             return False
 
-    def add_track_to_playlist(self, playlist_id: str, artist: str = None, title: str = None, 
-                          track_id: str = None, album: str = "", icon: str = None) -> str:
+    def add_track_to_playlist(self, playlist_id: str, artist: Optional[str] = None, title: Optional[str] = None, 
+                          track_id: Optional[str] = None, album: str  = "", icon: Optional[str] = None) -> str:
         """
         Add track to playlist. Two modes:
         1. Add existing track: pass track_id only
