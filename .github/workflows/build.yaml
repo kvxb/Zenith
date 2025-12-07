@@ -32,8 +32,8 @@ jobs:
           pip install flet Pillow pyinstaller
           # Install from requirements, excluding uvloop on Windows
           if [ "${{ runner.os }}" == "Windows" ]; then
-            pip install -r requierments.txt --no-deps
-            grep -v "uvloop" requierments.txt | xargs -r pip install
+            grep -v "uvloop" requierments.txt > requirements_filtered.txt
+            pip install -r requirements_filtered.txt
           else
             pip install -r requierments.txt
           fi
