@@ -19,7 +19,6 @@ class PlaylistManager:
         playlists = self.state_manager.playlists
         self.tab_area = UiMapper.playlist_tab_area_from_models(playlists)
 
-        self.tab_area.set_library_name(music_manager.get_library_name())
         self.event_bindings()
 
     def add_to_page(self, page: ft.Page):
@@ -30,6 +29,10 @@ class PlaylistManager:
 
         page.on_connect = lambda e: self.reconnect()
         page.on_disconnect = lambda e: self.on_disconnect()
+
+        self.tab_area.set_library_name(
+            self.state_manager.music_manager.get_library_name()
+        )
 
     def on_disconnect(self):
         print("Disconnecting - cleaning up audio")

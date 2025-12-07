@@ -4,7 +4,7 @@ import threading
 
 class SimpleMusicDB:
     """Thread-safe SQLite database for music tracks and playlists."""
-    
+
     def __init__(self):
         self.local = threading.local()
         self._ensure_tables_exist()
@@ -19,7 +19,8 @@ class SimpleMusicDB:
         """Create tracks, playlists, and junction tables."""
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS tracks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
@@ -30,9 +31,11 @@ class SimpleMusicDB:
                 path_mp3 TEXT,
                 reference_count INT DEFAULT 1
             )
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS playlists (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -40,9 +43,11 @@ class SimpleMusicDB:
                 total_duration INTEGER DEFAULT 0,
                 icon TEXT
             )
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS playlist_tracks (
                 playlist_id INTEGER,
                 track_id INTEGER,
@@ -50,19 +55,24 @@ class SimpleMusicDB:
                 FOREIGN KEY (track_id) REFERENCES tracks(id),
                 PRIMARY KEY (playlist_id, track_id)
         )
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS metadata (
                 key TEXT PRIMARY KEY,
                 value TEXT
             )
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR IGNORE INTO metadata (key, value) 
             VALUES ('LIBRARY_NAME', 'My Library')
-        """)
+        """
+        )
 
         conn.commit()
         print("✅ Database tables created!")
@@ -71,16 +81,16 @@ class SimpleMusicDB:
         """Set a metadata key-value pair."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute(
             """
             INSERT INTO metadata (key, value) 
             VALUES (?, ?)
             ON CONFLICT(key) DO UPDATE SET value = ?
             """,
-            (key, value, value)
+            (key, value, value),
         )
-        
+
         conn.commit()
         return True
 
@@ -88,35 +98,35 @@ class SimpleMusicDB:
         """Get a metadata value by key."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT value FROM metadata WHERE key = ?", (key,))
         result = cursor.fetchone()
-        
+
         return result[0] if result else default
 
-    def get_all_metadata(self) -> Dict[str, str]:
+    def get_all_metadata(self) -> dict[str, str]:
         """Get all metadata key-value pairs."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT key, value FROM metadata")
         results = cursor.fetchall()
-        
+
         return dict(results)
 
     def delete_metadata(self, key: str) -> bool:
         """Delete a metadata key-value pair."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("DELETE FROM metadata WHERE key = ?", (key,))
         conn.commit()
-        
+
         return cursor.rowcount > 0
 
     def _get_connection(self):
         """Get thread-local SQLite connection for safe concurrent access."""
-        if not hasattr(self.local, 'conn'):
+        if not hasattr(self.local, "conn"):
             self.local.conn = sqlite3.connect("playlists_songs.db")
         return self.local.conn
 
@@ -131,7 +141,7 @@ class SimpleMusicDB:
         """Remove track from playlist and update statistics."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT duration FROM tracks WHERE id = ?", (track_id,))
         duration = cursor.fetchone()[0]
 
@@ -161,20 +171,19 @@ class SimpleMusicDB:
         """Update playlist name. Returns True if successful."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute(
-            "UPDATE playlists SET name = ? WHERE id = ?",
-            (new_name, playlist_id)
+            "UPDATE playlists SET name = ? WHERE id = ?", (new_name, playlist_id)
         )
-        
+
         updated = cursor.rowcount > 0
         conn.commit()
-        
+
         if updated:
             print(f"✓ Playlist ID {playlist_id} renamed to '{new_name}'")
         else:
             print(f"✗ Playlist ID {playlist_id} not found")
-        
+
         return updated
 
     def add_track_to_playlist(self, playlist_id, title, artist, album, duration, icon):
@@ -184,7 +193,7 @@ class SimpleMusicDB:
 
         cursor.execute(
             "SELECT id FROM tracks WHERE title = ? AND artist = ? AND album = ?",
-            (title, artist, album)
+            (title, artist, album),
         )
         existing_track = cursor.fetchone()
 
@@ -226,22 +235,22 @@ class SimpleMusicDB:
         """Create a new playlist if it doesn't already exist."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         # Check if playlist already exists
         cursor.execute("SELECT id FROM playlists WHERE name = ?", (name,))
         existing = cursor.fetchone()
-        
+
         if existing:
             print(f"⚠️ Playlist '{name}' already exists (ID: {existing[0]})")
             return existing[0]  # Return existing ID
-        
+
         # Create new playlist
         cursor.execute(
             "INSERT INTO playlists (name, song_count, total_duration, icon) VALUES (?, 0, 0, ?)",
             (name, icon),
         )
         conn.commit()
-        
+
         new_id = cursor.lastrowid
         print(f"✅ Created new playlist '{name}' (ID: {new_id})")
         return new_id
