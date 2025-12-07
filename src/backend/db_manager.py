@@ -67,6 +67,53 @@ class SimpleMusicDB:
         conn.commit()
         print("✅ Database tables created!")
 
+    def set_metadata(self, key: str, value: str) -> bool:
+        """Set a metadata key-value pair."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            INSERT INTO metadata (key, value) 
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = ?
+            """,
+            (key, value, value)
+        )
+        
+        conn.commit()
+        return True
+
+    def get_metadata(self, key: str, default: str = "") -> str:
+        """Get a metadata value by key."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT value FROM metadata WHERE key = ?", (key,))
+        result = cursor.fetchone()
+        
+        return result[0] if result else default
+
+    def get_all_metadata(self) -> Dict[str, str]:
+        """Get all metadata key-value pairs."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT key, value FROM metadata")
+        results = cursor.fetchall()
+        
+        return dict(results)
+
+    def delete_metadata(self, key: str) -> bool:
+        """Delete a metadata key-value pair."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM metadata WHERE key = ?", (key,))
+        conn.commit()
+        
+        return cursor.rowcount > 0
+
     def _get_connection(self):
         """Get thread-local SQLite connection for safe concurrent access."""
         if not hasattr(self.local, 'conn'):

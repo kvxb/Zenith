@@ -61,13 +61,14 @@ class MusicManager:
         """Get the library name from metadata."""
         return self.db.get_metadata("LIBRARY_NAME", "My Library")
 
-    def set_metadata(self, key: str, value: str) -> bool:
-        """Set any metadata key-value pair."""
-        return self.db.set_metadata(key, value)
-
-    def get_metadata(self, key: str, default: str = "") -> str:
-        """Get any metadata value by key."""
-        return self.db.get_metadata(key, default)
+    # should not be available to frontend write speicifc methods for when new fields are added
+    # def set_metadata(self, key: str, value: str) -> bool:
+    #     """Set any metadata key-value pair."""
+    #     return self.db.set_metadata(key, value)
+    #
+    # def get_metadata(self, key: str, default: str = "") -> str:
+    #     """Get any metadata value by key."""
+    #     return self.db.get_metadata(key, default)
 
     def download_all_tracks(self) -> List[PlaylistModel]:
         """Download all tracks from YouTube to local files."""
