@@ -4,6 +4,7 @@ from .db_manager import SimpleMusicDB
 from .spotify_service import SpotifyService
 from .track_download import SimpleDownloader
 from .playlist_model import PlaylistModel
+from .icon_downloader import IconDownloader
 from .track_model import TrackModel
 from . import config
 
@@ -40,6 +41,7 @@ class MusicManager:
             client_id=config.CLIENT_ID, redirect_uri=config.REDIRECT_URI, db=self.db
         )
         self.downloader = SimpleDownloader(self.db)
+        self.icon_downloader = IconDownloader(db_path)
 
     def import_from_spotify(self) -> List[PlaylistModel]:
         """Authenticate and import playlists from Spotify."""
@@ -71,6 +73,11 @@ class MusicManager:
     #     """Get any metadata value by key."""
     #     return self.db.get_metadata(key, default)
 
+    def download_all_icons(self) -> Dict[str, int]:
+        """Download all Spotify icons locally."""
+        print("🖼️  Downloading Spotify icons...")
+        return self.icon_downloader.download_all_icons()
+
     def download_all_tracks(self) -> List[PlaylistModel]:
         """Download all tracks from YouTube to local files."""
         print("⬇️  Downloading all tracks from YouTube...")
@@ -92,6 +99,7 @@ class MusicManager:
         """Complete sync: import from Spotify then download from YouTube."""
         print("🚀 Starting complete sync...")
         self.import_from_spotify()
+        self.download_all_icons()
         self.download_all_tracks()
         return self._get_all_playlists()
 
