@@ -161,3 +161,21 @@ class PlaylistStateManager:
         )
 
         return new_track
+
+    def toggle_loop(self, playlist_id: str) -> bool:
+        """Toggle loop state for a playlist"""
+        playlist = self.get_playlist(playlist_id)
+        if playlist:
+            playlist.is_looping = not playlist.is_looping
+            return playlist.is_looping
+        return False
+
+    def toggle_track_loop(self, track_id: str) -> bool:
+        """Toggle loop state for a track across all playlists"""
+        track_info = self.get_track_from_playlists(track_id)
+        if track_info:
+            playlist, track = track_info
+            track.is_looping = not track.is_looping
+
+            return track.is_looping
+        return False
