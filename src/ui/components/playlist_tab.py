@@ -71,11 +71,31 @@ class PlaylistTabArea(ft.Container):
         target.controls.insert(new_index, element_to_move)
         target.update()
 
+    def _volume_control(self):
+        self.volume_slider = ft.Slider(
+            min=0,
+            max=100,
+            value=50,
+            divisions=100,
+            label="{value}%",
+            on_change=self._on_volume_change,
+        )
+        return ft.Row(
+            controls=[
+                ft.Icon(ft.Icons.VOLUME_DOWN, size=20),
+                self.volume_slider,
+                ft.Icon(ft.Icons.VOLUME_UP, size=20),
+            ],
+            spacing=5,
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
+
     def _header(self):
         self.header = ft.Column(
             controls=[
                 self._playlist_card_list_header(),
                 self._playlist_card_list(),
+                self._volume_control(),
             ],
         )
         return self.header
@@ -84,7 +104,7 @@ class PlaylistTabArea(ft.Container):
         self.play_button: ft.IconButton = ft.IconButton(
             icon=ft.Icons.PLAY_ARROW,
             tooltip="Play playlist",
-            on_click=self.on_play_button_click
+            on_click=self.on_play_button_click,
         )
         return self.play_button
 
@@ -100,6 +120,11 @@ class PlaylistTabArea(ft.Container):
     def _body_header(self):
         self.menu_button = ft.PopupMenuButton(
             items=[
+                ft.PopupMenuItem(
+                    text="Add Track",
+                    icon=ft.Icons.ADD,
+                    on_click=lambda e: self._on_add_track(),
+                ),
                 ft.PopupMenuItem(
                     text="Paste Track",
                     icon=ft.Icons.CONTENT_PASTE,
@@ -122,7 +147,7 @@ class PlaylistTabArea(ft.Container):
                 ft.IconButton(
                     icon=ft.Icons.SHUFFLE,
                     tooltip="Shuffle playlist",
-                    on_click=self._on_shuffle
+                    on_click=self._on_shuffle,
                 ),
                 self._loop_button(),
                 ft.Container(expand=True),
@@ -164,6 +189,8 @@ class PlaylistTabArea(ft.Container):
         self.on_rename_playlist = lambda playlist_id, new_name: None
         self.on_delete_track = lambda playlist_id, track_id: None
         self.on_copy_track = lambda playlist_id, track_id: None
+        self.on_add_track = lambda playlist_id: None
+        self.on_volume_change = lambda volume: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -350,6 +377,12 @@ class PlaylistTabArea(ft.Container):
         if playlist_id:
             self.on_paste_track(playlist_id)
 
+    def _on_add_track(self):
+        """Handle add track from menu"""
+        playlist_id = self._active_tab_uuid
+        if playlist_id:
+            self.on_add_track(playlist_id)
+
     def _on_add_empty_playlist(self):
         """Handle create empty playlist from menu"""
         self.on_add_empty_playlist()
@@ -358,10 +391,15 @@ class PlaylistTabArea(ft.Container):
         """Handle import from Spotify from menu"""
         self.on_add_from_spotify()
 
+    def _on_volume_change(self, e):
+        """Handle volume slider change"""
+        if e.control.value is not None:
+            self.on_volume_change(e.control.value / 100.0)
+
     def enable_paste_track(self, enabled: bool):
         """Enable or disable the paste track menu item"""
         if hasattr(self, "menu_button") and self.menu_button.items:
-            self.menu_button.items[0].disabled = not enabled
+            self.menu_button.items[1].disabled = not enabled
             self.menu_button.update()
 
     def _on_item_click(self, playlist_id: str, track_id: str):

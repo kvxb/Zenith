@@ -1,5 +1,5 @@
 import flet as ft
-from ui.components import PlaylistTabArea
+from ui.components import PlaylistTabArea, AddTrackForm
 from ui import AudioManager
 from ui.playback_controller import PlaybackController
 from ui.playlist_state_manager import PlaylistStateManager
@@ -216,6 +216,8 @@ class PlaylistManager:
             playlist_id
         )
         tab_area.on_loop_track = lambda track_id: self._on_loop_track(track_id)
+        tab_area.on_add_track = lambda playlist_id: self.on_add_track(playlist_id)
+        tab_area.on_volume_change = lambda volume: self.audio_manager.set_volume(volume)
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
@@ -469,3 +471,14 @@ class PlaylistManager:
 
         for playlist in playlists:
             self.add_playlist(playlist)
+
+    def on_add_track(self, playlist_id: str):
+        """Show the add track form dialog"""
+        print(f"Opening add track form for playlist {playlist_id}")
+
+        def handle_track_submit(track_name: str, artist: str):
+            return False
+
+        # Create and show the form dialog
+        add_track_form = AddTrackForm(on_submit=handle_track_submit)
+        add_track_form.show(self.page)
