@@ -1,3 +1,5 @@
+option for selective spotify import
+option for searching for a song to locally download
 implement multithreaded download
 add windows file system support
 fix fragile path for /src/assets 
