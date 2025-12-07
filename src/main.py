@@ -144,22 +144,23 @@ playlist3 = PlaylistModel(
 test_playlists = [playlist1, playlist2, playlist3]
 
 
-def on_event(e: ft.WindowEvent, page: ft.Page):
-    if e.type == ft.WindowEventType.CLOSE:
-        print("Application is closing.")
-        page.window.destroy()
-
-
 def main(page: ft.Page):
     page.title = "Zenith"
 
     # page.theme = ft.Theme(color_scheme_seed=ft.Colors.CYAN_100)
 
-    page.window.prevent_close = True
-    page.window.on_event = lambda e: on_event(e, page)
-
     playlist_manager = PlaylistManager(test_playlists)
     playlist_manager.add_to_page(page)
+
+    def on_event(e: ft.WindowEvent, page: ft.Page):
+        if e.type == ft.WindowEventType.CLOSE:
+            print("Application is closing.")
+            playlist_manager.pause()
+            playlist_manager.audio_manager.clear_audio()
+            page.window.destroy()
+
+    page.window.prevent_close = True
+    page.window.on_event = lambda e: on_event(e, page)
 
     page.update()
 
