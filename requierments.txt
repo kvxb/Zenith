@@ -59,3 +59,4 @@ watchdog==4.0.2
 watchfiles==1.1.1
 websockets==15.0.1
 yt-dlp==2025.11.12
+mutagen==1.47.0
