@@ -1,10 +1,17 @@
+backend
 fix the bug where everytime you open the app the playlists dont appear adn they multiply when import spotify
 option for selective spotify import
 option for searching for a song to locally download
-implement multithreaded download
 add windows file system support
 fix fragile path for /src/assets 
 fix spotify development stuff
 add database methods for order switching and other QOL
 icon support
 
+
+frontend
+volume mixer
+keybinds for pause, next, that work globally without the tab being in focus
+download animation and ETA
+color schemes like nvim
+album names are too far to the right a lot of empty space

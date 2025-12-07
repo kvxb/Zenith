@@ -144,15 +144,28 @@ class SimpleMusicDB:
         return track_id
 
     def add_playlist(self, name, icon=None):
-        """Create a new empty playlist."""
+        """Create a new playlist if it doesn't already exist."""
         conn = self._get_connection()
         cursor = conn.cursor()
+        
+        # Check if playlist already exists
+        cursor.execute("SELECT id FROM playlists WHERE name = ?", (name,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            print(f"⚠️ Playlist '{name}' already exists (ID: {existing[0]})")
+            return existing[0]  # Return existing ID
+        
+        # Create new playlist
         cursor.execute(
             "INSERT INTO playlists (name, song_count, total_duration, icon) VALUES (?, 0, 0, ?)",
             (name, icon),
         )
         conn.commit()
-        return cursor.lastrowid
+        
+        new_id = cursor.lastrowid
+        print(f"✅ Created new playlist '{name}' (ID: {new_id})")
+        return new_id
 
     def remove_playlist(self, playlist_id):
         """Delete playlist and update track reference counts."""
