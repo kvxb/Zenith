@@ -7,7 +7,7 @@ from . import config
 
 
 class MusicManager:
-    """High-level interface for the entire music system."""
+    """Main interface for Spotify import, YouTube download, and playlist management."""
 
     def __init__(self, db_path: str = "playlists_songs.db"):
         self.db = SimpleMusicDB()
@@ -17,10 +17,7 @@ class MusicManager:
         self.downloader = SimpleDownloader(self.db)
 
     def import_from_spotify(self) -> list[PlaylistModel]:
-        """
-        Import from Spotify and return PlaylistModel objects.
-        Returns: List of PlaylistModel objects (without file paths yet)
-        """
+        """Authenticate and import playlists from Spotify."""
         print("🔗 Authenticating with Spotify...")
         self.spotify_service.authenticate()
 
@@ -30,51 +27,38 @@ class MusicManager:
             f"✅ Imported {stats['tracks_imported']} tracks from {stats['playlists_imported']} playlists"
         )
 
-        return self._get_all_playlists()  # ← Returns models!
+        return self._get_all_playlists()
 
     def download_all_tracks(self) -> list[PlaylistModel]:
-        """
-        Download all tracks and return updated PlaylistModel objects.
-        Returns: List of PlaylistModel objects (with file paths)
-        """
+        """Download all tracks from YouTube to local files."""
         print("⬇️  Downloading all tracks from YouTube...")
         success, failed = self.downloader.download_all_tracks()
         print(f"✅ Downloaded {success} tracks, {failed} failed")
 
-        return self._get_all_playlists()  # ← Returns models!
+        return self._get_all_playlists()
 
     def sync_all(self) -> list[PlaylistModel]:
-        """
-        Complete sync: Spotify import → YouTube download.
-        Returns: List of PlaylistModel objects (ready to play)
-        """
+        """Complete sync: import from Spotify then download from YouTube."""
         print("🚀 Starting complete sync...")
         self.import_from_spotify()
         self.download_all_tracks()
-        return self._get_all_playlists()  # ← Returns models!
+        return self._get_all_playlists()
 
     def get_all_playlists(self) -> list[PlaylistModel]:
-        """
-        Get current database content as PlaylistModel objects.
-        Returns: List of PlaylistModel objects
-        """
+        """Get all playlists from database as model objects."""
         return self._get_all_playlists()
 
     def _get_all_playlists(self) -> list[PlaylistModel]:
-        """
-        Internal method to convert database to PlaylistModel objects.
-        """
+        """Convert database playlists and tracks to model objects."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
 
-        # Get all playlists
         cursor.execute("SELECT id, name FROM playlists")
         playlists = cursor.fetchall()
 
         playlist_models = []
 
         for playlist_id, playlist_name in playlists:
-            # Get all tracks for this playlist
             cursor.execute(
                 """
                 SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3
@@ -86,9 +70,8 @@ class MusicManager:
             )
 
             tracks = cursor.fetchall()
-
-            # Convert to TrackModel objects
             track_models = []
+            
             for track_id, title, artist, album, duration, path_mp3 in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
@@ -100,7 +83,6 @@ class MusicManager:
                 )
                 track_models.append(track_model)
 
-            # Create PlaylistModel
             playlist_model = PlaylistModel(
                 playlist_id=str(playlist_id), name=playlist_name, tracks=track_models
             )

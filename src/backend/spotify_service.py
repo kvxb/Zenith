@@ -329,33 +329,3 @@ class SpotifyService:
         print(f"✅ Imported {stats['tracks_imported']} saved tracks")
         return stats
 
-
-# Example usage
-# if __name__ == "__main__":
-#     # Initialize database
-#     db = SimpleMusicDB()
-#
-#     # Initialize Spotify service
-#     spotify = SpotifyService(
-#         client_id=config.CLIENT_ID,
-#         redirect_uri=config.REDIRECT_URI,
-#         db=db
-#     )
-#
-#     # Authenticate (will open browser)
-#     spotify.authenticate()
-#
-#     # Import all playlists
-#     print("\n" + "="*50)
-#     stats = spotify.import_all_playlists()
-#
-#     print("\n" + "="*50)
-#     print("📊 IMPORT STATISTICS:")
-#     print(f"   Total playlists found: {stats['total_playlists']}")
-#     print(f"   Playlists imported: {stats['playlists_imported']}")
-#     print(f"   Tracks imported: {stats['tracks_imported']}")
-#     print(f"   Errors: {stats['errors']}")
-#
-#     # Also import saved tracks if wanted
-#     # print("\n" + "="*50)
-#     # saved_stats = spotify.import_saved_tracks()

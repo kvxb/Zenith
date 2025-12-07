@@ -1,3 +1,4 @@
+fix the bug where everytime you open the app the playlists dont appear adn they multiply when import spotify
 option for selective spotify import
 option for searching for a song to locally download
 implement multithreaded download
@@ -5,6 +6,5 @@ add windows file system support
 fix fragile path for /src/assets 
 fix spotify development stuff
 add database methods for order switching and other QOL
-stop double importing of playlists maybe
 icon support
 

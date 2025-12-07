@@ -1,23 +1,25 @@
 import sqlite3
-import threading  # <-- ADAUGĂ ASTA
+import threading
 
 
 class SimpleMusicDB:
+    """Thread-safe SQLite database for music tracks and playlists."""
+    
     def __init__(self):
         self.local = threading.local()
-        self._ensure_tables_exist()  # <-- ADAUGĂ ASTA
+        self._ensure_tables_exist()
 
     def _ensure_tables_exist(self):
-        """Create tables once (in main thread)."""
+        """Create database tables if they don't exist."""
         conn = sqlite3.connect("playlists_songs.db")
         self._create_tables(conn)
         conn.close()
 
     def _create_tables(self, conn):
+        """Create tracks, playlists, and junction tables."""
         cursor = conn.cursor()
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS tracks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
@@ -28,11 +30,9 @@ class SimpleMusicDB:
                 path_mp3 TEXT,
                 reference_count INT DEFAULT 1
             )
-        """
-        )
+        """)
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS playlists (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -40,11 +40,9 @@ class SimpleMusicDB:
                 total_duration INTEGER DEFAULT 0,
                 icon TEXT
             )
-        """
-        )
+        """)
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS playlist_tracks (
                 playlist_id INTEGER,
                 track_id INTEGER,
@@ -52,31 +50,31 @@ class SimpleMusicDB:
                 FOREIGN KEY (track_id) REFERENCES tracks(id),
                 PRIMARY KEY (playlist_id, track_id)
             )
-        """
-        )
+        """)
 
         conn.commit()
         print("✅ Database tables created!")
 
     def _get_connection(self):
-        """Get thread-local SQLite connection."""
+        """Get thread-local SQLite connection for safe concurrent access."""
         if not hasattr(self.local, 'conn'):
             self.local.conn = sqlite3.connect("playlists_songs.db")
         return self.local.conn
 
-    # when we have to download the files from youtube
     def get_all_tracks(self):
+        """Retrieve all tracks from database."""
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM tracks")
         return cursor.fetchall()
 
     def remove_track_from_playlist(self, playlist_id, track_id):
+        """Remove track from playlist and update statistics."""
         conn = self._get_connection()
         cursor = conn.cursor()
+        
         cursor.execute("SELECT duration FROM tracks WHERE id = ?", (track_id,))
-        track = cursor.fetchone()
-        duration = track[0]
+        duration = cursor.fetchone()[0]
 
         cursor.execute(
             "DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
@@ -100,12 +98,11 @@ class SimpleMusicDB:
 
         conn.commit()
 
-    # the main operation done after the user chooses his playlists
     def add_track_to_playlist(self, playlist_id, title, artist, album, duration, icon):
+        """Add track to playlist, reusing existing tracks when possible."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        # Check if track already exists in database (including album)
         cursor.execute(
             "SELECT id FROM tracks WHERE title = ? AND artist = ? AND album = ?",
             (title, artist, album)
@@ -114,8 +111,6 @@ class SimpleMusicDB:
 
         if existing_track:
             track_id = existing_track[0]
-
-            # Check if track is already in this specific playlist
             cursor.execute(
                 "SELECT 1 FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
                 (playlist_id, track_id),
@@ -124,20 +119,17 @@ class SimpleMusicDB:
                 print(f"Track '{title}' by '{artist}' is already in playlist")
                 return track_id
         else:
-            # Create new track record (including album)
             cursor.execute(
                 "INSERT INTO tracks (title, artist, album, duration, icon, reference_count) VALUES (?, ?, ?, ?, ?, ?)",
                 (title, artist, album, duration, icon, 1),
             )
             track_id = cursor.lastrowid
 
-        # Add track to the playlist junction table
         cursor.execute(
             "INSERT INTO playlist_tracks (playlist_id, track_id) VALUES (?, ?)",
             (playlist_id, track_id),
         )
 
-        # Update playlist statistics
         cursor.execute(
             "UPDATE playlists SET song_count = song_count + 1 WHERE id = ?",
             (playlist_id,),
@@ -151,8 +143,8 @@ class SimpleMusicDB:
         conn.commit()
         return track_id
 
-    # before adding the tracks to the playlists we add the playlists themselves
     def add_playlist(self, name, icon=None):
+        """Create a new empty playlist."""
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -162,8 +154,8 @@ class SimpleMusicDB:
         conn.commit()
         return cursor.lastrowid
 
-    # removes playlists removes the tracks from playlist_tracks db and decreases the track counter from tracks db
     def remove_playlist(self, playlist_id):
+        """Delete playlist and update track reference counts."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
@@ -187,8 +179,8 @@ class SimpleMusicDB:
         conn.commit()
         print(f"Playlist {playlist_id} removed successfully")
 
-    # keep a counter on every track and when the counter reaches 0 and the user wants to free useless mem delete all files with 0 uses
     def delete_unused_tracks(self):
+        """Remove tracks with zero references (not in any playlist)."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
@@ -214,12 +206,3 @@ class SimpleMusicDB:
             print(f"  - '{title}' by '{artist}'")
 
         return deleted_count
-
-
-# if __name__ == "__main__":
-#     db = SimpleMusicDB()
-#
-#     test_tracks = [
-#         ("Bohemian Rhapsody", "Queen", 354, "/home/tudor/Music/song1.mp3"),
-#         ("Sweet Child O'Mine", "Guns N' Roses", 356, "/home/tudor/Music/song2.mp3"),
-#     ]
