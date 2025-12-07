@@ -54,6 +54,7 @@ class NowPlaying(ft.Container):
         self.previous_btn = ft.IconButton(
             icon=ft.Icons.SKIP_PREVIOUS_ROUNDED,
             icon_size=24,
+            tooltip="Previous track",
             on_click=lambda e: (
                 self.on_previous_click() if self.on_previous_click else None
             ),
@@ -61,6 +62,7 @@ class NowPlaying(ft.Container):
         self.play_pause_btn = ft.IconButton(
             icon=ft.Icons.PLAY_CIRCLE_FILLED,
             icon_size=36,
+            tooltip="Play/Pause",
             on_click=lambda e: (
                 self.on_play_pause_click("playing")
                 if self.on_play_pause_click
@@ -70,6 +72,7 @@ class NowPlaying(ft.Container):
         self.next_btn = ft.IconButton(
             icon=ft.Icons.SKIP_NEXT_ROUNDED,
             icon_size=24,
+            tooltip="Next track",
             on_click=lambda e: self.on_next_click() if self.on_next_click else None,
         )
 

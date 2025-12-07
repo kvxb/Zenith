@@ -38,7 +38,7 @@ class PlaylistTabArea(ft.Container):
                         ),
                     ],
                     icon=ft.Icons.ADD,
-                    tooltip="Add Playlist",
+                    tooltip="Add new playlist",
                 ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -82,7 +82,9 @@ class PlaylistTabArea(ft.Container):
 
     def _play_button(self):
         self.play_button: ft.IconButton = ft.IconButton(
-            icon=ft.Icons.PLAY_ARROW, on_click=self.on_play_button_click
+            icon=ft.Icons.PLAY_ARROW,
+            tooltip="Play playlist",
+            on_click=self.on_play_button_click
         )
         return self.play_button
 
@@ -90,6 +92,7 @@ class PlaylistTabArea(ft.Container):
         self.loop_button: ft.IconButton = ft.IconButton(
             icon=ft.Icons.REPEAT,
             icon_color=ft.Colors.OUTLINE,
+            tooltip="Loop playlist",
             on_click=self._on_loop_playlist,
         )
         return self.loop_button
@@ -116,7 +119,11 @@ class PlaylistTabArea(ft.Container):
         return ft.Row(
             controls=[
                 self._play_button(),
-                ft.IconButton(icon=ft.Icons.SHUFFLE, on_click=self._on_shuffle),
+                ft.IconButton(
+                    icon=ft.Icons.SHUFFLE,
+                    tooltip="Shuffle playlist",
+                    on_click=self._on_shuffle
+                ),
                 self._loop_button(),
                 ft.Container(expand=True),
                 self.menu_button,

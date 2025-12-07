@@ -61,6 +61,7 @@ class PlaylistItem(ft.Container):
             ],
             icon=ft.Icons.MORE_VERT,
             icon_color=ft.Colors.TRANSPARENT,
+            tooltip="Track options",
         )
 
         row_data = ft.Row(
