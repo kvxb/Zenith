@@ -25,9 +25,11 @@ class PlaylistItem(ft.Container):
         self.on_card_click = lambda track_id: print(f"Item clicked {track_id}")
         self.on_delete = lambda track_id: print(f"Delete track {track_id}")
         self.on_copy = lambda track_id: print(f"Copy track {track_id}")
+        self.on_loop = lambda track_id: print(f"Loop track {track_id}")
         self.key = track_id
 
         self.is_playing = False
+        self.is_reordering = False
         self.number_text_control = self._number_text()
         self.playing_icon = ft.Icon(
             name=ft.Icons.VOLUME_UP_ROUNDED,
@@ -41,6 +43,11 @@ class PlaylistItem(ft.Container):
         self.menu_button = ft.PopupMenuButton(
             items=[
                 ft.PopupMenuItem(
+                    text="Loop Track",
+                    icon=ft.Icons.REPEAT_ONE,
+                    on_click=lambda e: self.on_loop(self.id),
+                ),
+                ft.PopupMenuItem(
                     text="Copy Track",
                     icon=ft.Icons.CONTENT_COPY,
                     on_click=lambda e: self.on_copy(self.id),
@@ -53,8 +60,7 @@ class PlaylistItem(ft.Container):
                 ),
             ],
             icon=ft.Icons.MORE_VERT,
-            icon_color=ft.Colors.WHITE,
-            visible=False,
+            icon_color=ft.Colors.TRANSPARENT,
         )
 
         row_data = ft.Row(
@@ -63,7 +69,6 @@ class PlaylistItem(ft.Container):
                     controls=[
                         self.number_text_control,
                         self.playing_icon,
-                        self.menu_button,
                     ],
                     width=40,
                 ),
@@ -83,17 +88,31 @@ class PlaylistItem(ft.Container):
                 ),
                 self._album_text(),
                 self._duration_text(),
-                ft.Container(width=20),  # Right margin for menu button space
             ],
             spacing=10,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        self.content = ft.GestureDetector(
-            content=row_data,
-            on_enter=self._on_enter_event,
-            on_exit=self._on_exit_event,
-            on_tap=lambda e: self.on_card_click(self.id),
+        self.content = ft.Row(
+            controls=[
+                ft.GestureDetector(
+                    content=row_data,
+                    on_enter=lambda e: self._on_enter_event(e),
+                    on_exit=lambda e: self._on_exit_event(e),
+                    on_tap=lambda e: self.on_card_click(self.id),
+                    expand=True,
+                ),
+                ft.Container(
+                    content=ft.GestureDetector(
+                        content=self.menu_button,
+                        on_enter=lambda e: self._on_enter_event(e),
+                        on_exit=lambda e: self._on_exit_event(e),
+                    ),
+                    alignment=ft.alignment.center,
+                    margin=ft.margin.only(right=30),
+                ),
+            ],
+            expand=True,
         )
 
         # Container styling
@@ -156,6 +175,7 @@ class PlaylistItem(ft.Container):
         )
 
     def highlight(self, show: bool):
+        self.is_playing = show
         self.playing_icon.visible = show
         self.number_text_control.visible = not show
         if show:
@@ -167,14 +187,25 @@ class PlaylistItem(ft.Container):
 
         print(f"Updating playlist item highlight {show}")
 
+    def toggle_loop_style(self, is_looping: bool):
+        """Toggle visual style to indicate track is looping"""
+        if is_looping:
+            # Add visual indicator for looping track (e.g., different border color)
+            self.border = ft.border.all(2, ft.Colors.PRIMARY)
+        else:
+            # Reset to normal border
+            if self.is_playing:
+                self.border = ft.border.all(1, ft.Colors.PRIMARY)
+            else:
+                self.border = ft.border.all(0.1, ft.Colors.OUTLINE)
+        self.update()
+
     def _on_enter_event(self, e):
-        if not self.is_playing:
-            self.number_text_control.visible = False
-            self.menu_button.visible = True
-            self.update()
+        # if self.page:
+        self.menu_button.icon_color = ft.Colors.PRIMARY
+        self.menu_button.update()
 
     def _on_exit_event(self, e):
-        if not self.is_playing:
-            self.number_text_control.visible = True
-            self.menu_button.visible = False
-            self.update()
+        # if self.page:
+        self.menu_button.icon_color = ft.Colors.TRANSPARENT
+        self.menu_button.update()
