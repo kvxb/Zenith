@@ -6,6 +6,8 @@ add windows file system support
 fix fragile path for /src/assets 
 icon support
 fix spotify development stuff
+stats for songs played
+visualizations for music
 
 
 frontend

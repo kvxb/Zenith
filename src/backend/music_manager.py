@@ -27,6 +27,7 @@ Public API for frontend:
 - get_library_name()            Get library name
 - set_metadata()                Set any metadata
 - get_metadata()                Get any metadata
+- reorder_tracks()              Reorder tracks in a playlist
 """
 
 
@@ -277,6 +278,7 @@ class MusicManager:
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
+                ORDER BY pt.position
             """,
                 (playlist_id_int,),
             )
@@ -323,6 +325,7 @@ class MusicManager:
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
+                ORDER BY pt.position
             """,
                 (playlist_id,),
             )
@@ -347,6 +350,16 @@ class MusicManager:
             playlist_models.append(playlist_model)
 
         return playlist_models
+
+    def reorder_tracks(self, playlist_id: str, new_order: List[str]) -> bool:
+        """Reorder tracks in a playlist based on list of track IDs."""
+        try:
+            playlist_id_int = int(playlist_id)
+            track_ids = [int(tid) for tid in new_order]
+            return self.db.reorder_playlist_tracks(playlist_id_int, track_ids)
+        except Exception as e:
+            print(f"Error reordering tracks: {e}")
+            return False
 
     def get_track_id(self, artist: str, title: str, album: str = "") -> Optional[str]:
         """Find track ID by artist, title, and optional album."""

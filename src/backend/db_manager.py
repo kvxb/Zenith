@@ -1,3 +1,4 @@
+from typing import List
 import sqlite3
 import threading
 
@@ -51,12 +52,15 @@ class SimpleMusicDB:
             CREATE TABLE IF NOT EXISTS playlist_tracks (
                 playlist_id INTEGER,
                 track_id INTEGER,
+                position INTEGER DEFAULT 0,
                 FOREIGN KEY (playlist_id) REFERENCES playlists(id),
                 FOREIGN KEY (track_id) REFERENCES tracks(id),
                 PRIMARY KEY (playlist_id, track_id)
         )
         """
         )
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_position ON playlist_tracks(playlist_id, position)")
 
         cursor.execute(
             """
@@ -138,18 +142,31 @@ class SimpleMusicDB:
         return cursor.fetchall()
 
     def remove_track_from_playlist(self, playlist_id, track_id):
-        """Remove track from playlist and update statistics."""
         conn = self._get_connection()
         cursor = conn.cursor()
-
+        
+        # Get track duration and position
         cursor.execute("SELECT duration FROM tracks WHERE id = ?", (track_id,))
         duration = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT position FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?", 
+                       (playlist_id, track_id))
+        old_position = cursor.fetchone()[0]
 
+        # Remove track from playlist
         cursor.execute(
             "DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
             (playlist_id, track_id),
         )
 
+        # Reorder remaining tracks (shift positions up)
+        cursor.execute("""
+            UPDATE playlist_tracks 
+            SET position = position - 1 
+            WHERE playlist_id = ? AND position > ?
+        """, (playlist_id, old_position))
+
+        # Update playlist stats
         cursor.execute(
             "UPDATE playlists SET song_count = song_count - 1 WHERE id = ?",
             (playlist_id,),
@@ -166,6 +183,25 @@ class SimpleMusicDB:
         )
 
         conn.commit()
+
+    def reorder_playlist_tracks(self, playlist_id: int, new_order: List[int]) -> bool:
+        """Reorder tracks in a playlist. new_order is list of track IDs."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            for position, track_id in enumerate(new_order, 1):
+                cursor.execute(
+                    "UPDATE playlist_tracks SET position = ? WHERE playlist_id = ? AND track_id = ?",
+                    (position, playlist_id, track_id)
+                )
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            print(f"Error reordering: {e}")
+            return False
 
     def update_playlist_name(self, playlist_id: int, new_name: str) -> bool:
         """Update playlist name. Returns True if successful."""
@@ -187,13 +223,12 @@ class SimpleMusicDB:
         return updated
 
     def add_track_to_playlist(self, playlist_id, title, artist, album, duration, icon):
-        """Add track to playlist, reusing existing tracks when possible."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         cursor.execute(
             "SELECT id FROM tracks WHERE title = ? AND artist = ? AND album = ?",
-            (title, artist, album),
+            (title, artist, album)
         )
         existing_track = cursor.fetchone()
 
@@ -213,20 +248,28 @@ class SimpleMusicDB:
             )
             track_id = cursor.lastrowid
 
+        # Get current song count BEFORE updating
+        cursor.execute("SELECT song_count FROM playlists WHERE id = ?", (playlist_id,))
+        current_count = cursor.fetchone()[0]
+
+        # Insert with position (adds at end)
         cursor.execute(
-            "INSERT INTO playlist_tracks (playlist_id, track_id) VALUES (?, ?)",
-            (playlist_id, track_id),
+            "INSERT INTO playlist_tracks (playlist_id, track_id, position) VALUES (?, ?, ?)",
+            (playlist_id, track_id, current_count + 1),
         )
 
+        # Update playlist stats
         cursor.execute(
             "UPDATE playlists SET song_count = song_count + 1 WHERE id = ?",
             (playlist_id,),
         )
 
-        cursor.execute(
-            "UPDATE playlists SET total_duration = total_duration + ? WHERE id = ?",
-            (duration, playlist_id),
-        )
+        # Only add duration if we have actual duration
+        if duration > 0:
+            cursor.execute(
+                "UPDATE playlists SET total_duration = total_duration + ? WHERE id = ?",
+                (duration, playlist_id),
+            )
 
         conn.commit()
         return track_id
