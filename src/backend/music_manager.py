@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
 from .db_manager import SimpleMusicDB
 from .spotify_service import SpotifyService
@@ -39,7 +39,7 @@ class MusicManager:
         )
         self.downloader = SimpleDownloader(self.db)
 
-    def import_from_spotify(self) -> list[PlaylistModel]:
+    def import_from_spotify(self) -> List[PlaylistModel]:
         """Authenticate and import playlists from Spotify."""
         print("🔗 Authenticating with Spotify...")
         self.spotify_service.authenticate()
@@ -68,7 +68,7 @@ class MusicManager:
         """Get any metadata value by key."""
         return self.db.get_metadata(key, default)
 
-    def download_all_tracks(self) -> list[PlaylistModel]:
+    def download_all_tracks(self) -> List[PlaylistModel]:
         """Download all tracks from YouTube to local files."""
         print("⬇️  Downloading all tracks from YouTube...")
         success, failed = self.downloader.download_all_tracks()
@@ -85,14 +85,14 @@ class MusicManager:
             print(f"Invalid playlist ID: {playlist_id}")
             return False
 
-    def sync_all(self) -> list[PlaylistModel]:
+    def sync_all(self) -> List[PlaylistModel]:
         """Complete sync: import from Spotify then download from YouTube."""
         print("🚀 Starting complete sync...")
         self.import_from_spotify()
         self.download_all_tracks()
         return self._get_all_playlists()
 
-    def get_all_playlists(self) -> list[PlaylistModel]:
+    def get_all_playlists(self) -> List[PlaylistModel]:
         """Get all playlists from database as model objects."""
         return self._get_all_playlists()
 
@@ -127,8 +127,9 @@ class MusicManager:
             print(f"Error removing track from playlist: {e}")
             return False
 
-    def add_track_to_playlist(self, playlist_id: str, artist: Optional[str] = None, title: Optional[str] = None, 
-                          track_id: Optional[str] = None, album: str  = "", icon: Optional[str] = None) -> str:
+    def add_track_to_playlist(self, playlist_id: str, artist: Optional[str] = None, 
+                              title: Optional[str] = None, track_id: Optional[str] = None, 
+                              album: str = "", icon: Optional[str] = None) -> str:
         """
         Add track to playlist. Two modes:
         1. Add existing track: pass track_id only
@@ -191,7 +192,7 @@ class MusicManager:
             print(f"Error adding track: {e}")
             return ""
 
-    def add_playlist(self, name: str, icon: str = None) -> str:
+    def add_playlist(self, name: str, icon: Optional[str] = None) -> str:
         """Create a new playlist in the database."""
         try:
             playlist_id = self.db.add_playlist(name, icon)
@@ -200,7 +201,7 @@ class MusicManager:
             print(f"Error creating playlist: {e}")
             return ""
 
-    def get_track_by_id(self, track_id: str) -> dict:
+    def get_track_by_id(self, track_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed info for a single track."""
         try:
             track_id_int = int(track_id)
@@ -232,7 +233,7 @@ class MusicManager:
             print(f"Error getting track: {e}")
             return None
 
-    def get_playlist_by_id(self, playlist_id: str) -> PlaylistModel:
+    def get_playlist_by_id(self, playlist_id: str) -> Optional[PlaylistModel]:
         """Get a single playlist with all its tracks."""
         try:
             playlist_id_int = int(playlist_id)
@@ -256,7 +257,7 @@ class MusicManager:
             """, (playlist_id_int,))
             
             tracks = cursor.fetchall()
-            track_models = []
+            track_models: List[TrackModel] = []
             
             for track_id, title, artist, album, duration, path_mp3 in tracks:
                 track_model = TrackModel(
@@ -282,7 +283,7 @@ class MusicManager:
             print(f"Error getting playlist: {e}")
             return None
 
-    def _get_all_playlists(self) -> list[PlaylistModel]:
+    def _get_all_playlists(self) -> List[PlaylistModel]:
         """Convert database playlists and tracks to model objects."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
@@ -290,7 +291,7 @@ class MusicManager:
         cursor.execute("SELECT id, name FROM playlists")
         playlists = cursor.fetchall()
 
-        playlist_models = []
+        playlist_models: List[PlaylistModel] = []
 
         for playlist_id, playlist_name in playlists:
             cursor.execute(
@@ -304,7 +305,7 @@ class MusicManager:
             )
 
             tracks = cursor.fetchall()
-            track_models = []
+            track_models: List[TrackModel] = []
             
             for track_id, title, artist, album, duration, path_mp3 in tracks:
                 track_model = TrackModel(
@@ -353,7 +354,7 @@ class MusicManager:
     
         return str(result[0]) if result else None
 
-    def get_all_playlist_ids(self) -> dict:
+    def get_all_playlist_ids(self) -> Dict[str, str]:
         """Get all playlist names and their IDs."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
