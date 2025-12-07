@@ -49,7 +49,19 @@ class SimpleMusicDB:
                 FOREIGN KEY (playlist_id) REFERENCES playlists(id),
                 FOREIGN KEY (track_id) REFERENCES tracks(id),
                 PRIMARY KEY (playlist_id, track_id)
+        )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT
             )
+        """)
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO metadata (key, value) 
+            VALUES ('LIBRARY_NAME', 'My Library')
         """)
 
         conn.commit()

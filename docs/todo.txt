@@ -1,5 +1,6 @@
 backend
 
+double download problem came back
 option for selective spotify import
 add windows file system support
 fix fragile path for /src/assets 
