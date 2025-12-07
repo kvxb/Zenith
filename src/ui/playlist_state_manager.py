@@ -2,12 +2,16 @@
 
 from typing import Optional
 from backend import PlaylistModel, TrackModel
+from backend.music_manager import MusicManager
 
 
 class PlaylistStateManager:
-    def __init__(self, playlists: list[PlaylistModel]):
-        self.playlists = playlists
-        self.active_playlist_id = playlists[0].id if playlists else ""
+    def __init__(self, music_manager: MusicManager):
+        self.music_manager = music_manager
+
+        self.playlists = self.music_manager.get_all_playlists()
+
+        self.active_playlist_id = self.playlists[0].id if self.playlists else ""
         self.last_playlist: Optional[PlaylistModel] = None
         self.last_track: Optional[TrackModel] = None
         self.copied_track: Optional[TrackModel] = None
@@ -45,16 +49,6 @@ class PlaylistStateManager:
         if active_playlist is None:
             return None
         return active_playlist.get_active_track()
-
-    def get_track_from_playlists(
-        self, track_id: str
-    ) -> Optional[tuple[PlaylistModel, TrackModel]]:
-        """Find a track across all playlists"""
-        for playlist in self.playlists:
-            track = playlist.get_track(track_id)
-            if track is not None:
-                return (playlist, track)
-        return None
 
     def move_to_next_track(self) -> Optional[TrackModel]:
         """Move to next track in active playlist"""
@@ -101,33 +95,54 @@ class PlaylistStateManager:
 
         return (playlist, track)
 
-    def move_track_to_playlist(self, track_id: str, target_playlist_id: str) -> bool:
+    def move_track_to_playlist(
+        self, source_playlist_id: str, track: TrackModel, target_playlist_id: str = ""
+    ) -> bool:
         """Move a track to a different playlist"""
-        source = self.get_track_from_playlists(track_id)
-        target_playlist = self.get_playlist(target_playlist_id)
+        source_playlist = (
+            self.get_playlist(source_playlist_id) if source_playlist_id else None
+        )
+        target_playlist = (
+            self.get_playlist(target_playlist_id) if target_playlist_id else None
+        )
 
-        if source is None:
+        if source_playlist_id and source_playlist is None:
             return False
 
-        source_playlist, track = source
-        if target_playlist is None:
+        if target_playlist_id and target_playlist is None:
+            return False
+
+        # Remove from source playlist if it exists
+        if source_playlist:
             source_playlist.remove_track(track)
-            return True
+            self.music_manager.remove_track_from_playlist(source_playlist.id, track.id)
 
-        if source_playlist.id == target_playlist.id:
-            return False
+        # Add to target playlist if it exists
+        if target_playlist:
+            if source_playlist and source_playlist.id == target_playlist.id:
+                return False
 
-        source_playlist.remove_track(track)
-        target_playlist.add_track(track)
+            target_playlist.add_track(track)
+            self.music_manager.add_track_to_playlist(
+                target_playlist.id,
+                track.artist,
+                track.title,
+                track.album,
+                track.image_path,
+            )
+
         return True
 
     def add_playlist(self, playlist: PlaylistModel):
         """Add a new playlist to the manager"""
         self.playlists.append(playlist)
+        self.music_manager.add_playlist(playlist.name)
 
     def remove_playlist(self, playlist_id: str):
         """Remove a playlist from the manager by ID"""
         self.playlists = [pl for pl in self.playlists if pl.id != playlist_id]
+        success = self.music_manager.delete_playlist(playlist_id)
+        print(f"Removed playlist {playlist_id}: {success}")
 
     def rename_playlist(self, playlist_id: str, new_name: str) -> None:
         """Rename a playlist by ID"""
@@ -137,30 +152,26 @@ class PlaylistStateManager:
             return
         playlist.name = new_name
 
-    def create_empty_playlist(self) -> PlaylistModel:
-        """Create and return a new empty playlist"""
-        import uuid
+        self.music_manager.update_playlist_name(playlist_id, new_name)
 
-        new_id = str(uuid.uuid4())
-        new_playlist = PlaylistModel(playlist_id=new_id, name="New Playlist", tracks=[])
-        return new_playlist
+    def create_empty_playlist(self) -> PlaylistModel | None:
+        """Create and return a new empty playlist"""
+        # import uuid
+
+        # new_id = str(uuid.uuid4())
+        # new_playlist = PlaylistModel(playlist_id=new_id, name="New Playlist", tracks=[])
+        new_name = "New Playlist"
+        id = self.music_manager.add_playlist(new_name)
+        if id is None:
+            raise Exception("Failed to create new playlist")
+            return
+
+        return PlaylistModel(playlist_id=id, name=new_name, tracks=[])
 
     def get_copied_track_copy(self) -> TrackModel | None:
         if self.copied_track is None:
             return None
-        import uuid
-
-        new_track = TrackModel(
-            track_id=str(uuid.uuid4()),
-            title=self.copied_track.title,
-            artist=self.copied_track.artist,
-            album=self.copied_track.album,
-            duration=self.copied_track.duration,
-            file_path=self.copied_track.file_path,
-            is_copy=True,
-        )
-
-        return new_track
+        return self.copied_track.clone(self.copied_track)
 
     def toggle_loop(self, playlist_id: str) -> bool:
         """Toggle loop state for a playlist"""
@@ -170,12 +181,14 @@ class PlaylistStateManager:
             return playlist.is_looping
         return False
 
-    def toggle_track_loop(self, track_id: str) -> bool:
-        """Toggle loop state for a track across all playlists"""
-        track_info = self.get_track_from_playlists(track_id)
-        if track_info:
-            playlist, track = track_info
+    def toggle_track_loop(self, playlist_id: str, track_id: str) -> bool:
+        """Toggle loop state for a track in a specific playlist"""
+        playlist = self.get_playlist(playlist_id)
+        if playlist is None:
+            return False
+            
+        track = playlist.get_track(track_id)
+        if track:
             track.is_looping = not track.is_looping
-
             return track.is_looping
         return False

@@ -45,15 +45,17 @@ class AddTrackForm(ft.AlertDialog):
         super().__init__(
             modal=True,
             title=ft.Text("Add Track", weight=ft.FontWeight.BOLD, size=20),
-            content=ft.Column(
-                controls=[
-                    self.message_bar,
-                    self.track_name_field,
-                    self.artist_field,
-                ],
+            content=ft.Container(
+                content=ft.Column(
+                    controls=[
+                        self.message_bar,
+                        self.track_name_field,
+                        self.artist_field,
+                    ],
+                    spacing=15,
+                    tight=True,
+                ),
                 width=400,
-                spacing=15,
-                tight=True,
             ),
             actions=[
                 ft.TextButton(

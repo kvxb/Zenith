@@ -10,14 +10,15 @@ from backend.music_manager import MusicManager
 
 
 class PlaylistManager:
-    def __init__(self, playlists: list[PlaylistModel]):
+    def __init__(self, music_manager: MusicManager):
         # Initialize components
-        self.state_manager = PlaylistStateManager(playlists)
         self.audio_manager = AudioManager()
         self.playback_controller = PlaybackController(self.audio_manager)
+
+        self.state_manager = PlaylistStateManager(music_manager)
+        playlists = self.state_manager.playlists
         self.tab_area = UiMapper.playlist_tab_area_from_models(playlists)
 
-        self.music_manager = MusicManager()
         self.event_bindings()
 
     def add_to_page(self, page: ft.Page):
@@ -183,9 +184,9 @@ class PlaylistManager:
         is_looping = self.state_manager.toggle_loop(playlist_id)
         self.tab_area.toggle_loop_button(is_looping)
 
-    def _on_loop_track(self, track_id: str):
+    def _on_loop_track(self, playlist_id: str, track_id: str):
         """Handle track loop toggle and update UI"""
-        is_looping = self.state_manager.toggle_track_loop(track_id)
+        is_looping = self.state_manager.toggle_track_loop(playlist_id, track_id)
         self.tab_area.toggle_track_loop(track_id, is_looping)
 
     def event_bindings(self):
@@ -197,7 +198,11 @@ class PlaylistManager:
 
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
-        tab_area.on_drop = self.on_track_drop
+        tab_area.on_drop = (
+            lambda source_playlist_id, playlist_id, track_id: self.on_track_drop(
+                source_playlist_id, playlist_id, track_id
+            )
+        )
         tab_area.on_focus_change = lambda playlist_id: self._on_focus_change(
             playlist_id
         )
@@ -212,10 +217,13 @@ class PlaylistManager:
         tab_area.on_delete_track = self.on_delete_track
         tab_area.on_copy_track = self.on_copy_track
         tab_area.on_paste_track = self.on_paste_track
+        tab_area.on_delete_playlist = self.remove_playlist
         tab_area.on_loop_playlist = lambda playlist_id: self._on_loop_playlist(
             playlist_id
         )
-        tab_area.on_loop_track = lambda track_id: self._on_loop_track(track_id)
+        tab_area.on_loop_track = lambda playlist_id, track_id: self._on_loop_track(
+            playlist_id, track_id
+        )
         tab_area.on_add_track = lambda playlist_id: self.on_add_track(playlist_id)
         tab_area.on_volume_change = lambda volume: self.audio_manager.set_volume(volume)
 
@@ -233,20 +241,19 @@ class PlaylistManager:
         now_playing.next_btn.on_click = lambda e: self.play_next_track()
         now_playing.previous_btn.on_click = lambda e: self.play_previous_track()
 
-    def on_track_drop(self, playlist_id: str, track_id: str):
+    def on_track_drop(self, source_playlist_id: str, playlist_id: str, track_id: str):
         """Handle track drop on playlist card"""
-        print(f"Track {track_id} dropped on playlist {playlist_id}")
+        print(
+            f"Track {track_id} dropped on playlist {playlist_id} from {source_playlist_id}"
+        )
 
-        track_info = self.state_manager.get_track_from_playlists(track_id)
-        if track_info is None:
-            print(f"Track {track_id} not found")
+        if source_playlist_id == playlist_id:
+            print("Track dropped on the same playlist, no action taken")
             return
 
-        source_playlist, track = track_info
-        was_active = self.state_manager.get_active_track() == track
-
-        if source_playlist.id == playlist_id:
-            print("Track dropped on the same playlist, no action taken")
+        source_playlist = self.state_manager.get_playlist(source_playlist_id)
+        if source_playlist is None:
+            print(f"Source playlist {source_playlist_id} not found")
             return
 
         target_playlist = self.state_manager.get_playlist(playlist_id)
@@ -254,7 +261,14 @@ class PlaylistManager:
             print(f"Target playlist {playlist_id} not found")
             return
 
-        self.remove_track(source_playlist.id, track.id)
+        track = source_playlist.get_track(track_id)
+        if track is None:
+            print(f"Track {track_id} not found in source playlist")
+            return
+
+        was_active = self.state_manager.get_active_track() == track
+
+        self.remove_track(source_playlist_id, track.id)
         self.add_track(playlist_id, track)
 
         if was_active:
@@ -281,7 +295,7 @@ class PlaylistManager:
 
             self.forget()
 
-        playlist.remove_track(track)
+        self.state_manager.move_track_to_playlist(playlist_id, track, "")
         playlist_ui = self.tab_area.get_playlist(playlist_id)
         if playlist_ui is not None:
             playlist_ui.remove_track_item(track_id)
@@ -293,14 +307,14 @@ class PlaylistManager:
 
     def add_track(self, playlist_id: str, track: TrackModel):
         """Add a track to a playlist"""
-        print(f"Adding track {track.id} to playlist {playlist_id}")
 
         playlist = self.state_manager.get_playlist(playlist_id)
         if playlist is None:
             print(f"Playlist {playlist_id} not found")
             return
 
-        playlist.add_track(track)
+        self.state_manager.move_track_to_playlist("", track, playlist_id)
+
         playlit_ui = self.tab_area.get_playlist(playlist_id)
         if playlit_ui is not None:
             item_ui = UiMapper.play_list_item_from_track_model(track, 0)
@@ -428,7 +442,8 @@ class PlaylistManager:
 
         def on_confirm():
             # Remove from backend
-            playlist.remove_track(track)
+            self.state_manager.move_track_to_playlist(playlist_id, track, "")
+            # playlist.remove_track(track)
 
             # Remove from UI
             playlist_ui = self.tab_area.get_playlist(playlist_id)
@@ -467,7 +482,7 @@ class PlaylistManager:
         # return
         """Fetch playlists from Spotify"""
         print("Fetching playlists from Spotify")
-        playlists = self.music_manager.sync_all()
+        playlists = self.state_manager.music_manager.sync_all()
 
         for playlist in playlists:
             self.add_playlist(playlist)
@@ -477,7 +492,11 @@ class PlaylistManager:
         print(f"Opening add track form for playlist {playlist_id}")
 
         def handle_track_submit(track_name: str, artist: str):
-            return False
+            id = self.state_manager.music_manager.add_track_to_playlist(
+                playlist_id, artist, track_name
+            )
+
+            return id
 
         # Create and show the form dialog
         add_track_form = AddTrackForm(on_submit=handle_track_submit)

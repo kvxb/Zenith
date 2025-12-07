@@ -7,141 +7,7 @@ import uuid
 from flet_audio import Audio
 from ui import PlaylistManager
 from backend import TrackModel, PlaylistModel
-
-random_tracks = [
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="One Piece",
-        artist="Eiichiro Oda",
-        album="Shonen Jump",
-        duration=234,
-        file_path="Saika.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Gorosei Theme",
-        artist="Kohei Tanaka",
-        album="One Piece OST",
-        duration=198,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Luffy's Awakening",
-        artist="Kohei Tanaka",
-        album="Wano Arc",
-        duration=312,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Zoro vs King",
-        artist="Shiro Hamaguchi",
-        album="One Piece Film Red",
-        duration=276,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Gear 5",
-        artist="Kohei Tanaka",
-        album="Egghead Arc",
-        duration=189,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Nika Drums",
-        artist="Shiro Hamaguchi",
-        album="One Piece OST",
-        duration=245,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Shanks Arrival",
-        artist="Kohei Tanaka",
-        album="Film Red",
-        duration=167,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Going Merry",
-        artist="Kohei Tanaka",
-        album="Water 7 Arc",
-        duration=298,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Overtaken",
-        artist="Kohei Tanaka",
-        album="Enies Lobby",
-        duration=223,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="The Very Strongest",
-        artist="Shiro Hamaguchi",
-        album="Marineford",
-        duration=267,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="Binks Sake",
-        artist="Brook",
-        album="Thriller Bark",
-        duration=178,
-        file_path="gorosei.mp3",
-    ),
-    TrackModel(
-        track_id=str(uuid.uuid4()),
-        title="We Are!",
-        artist="Hiroshi Kitadani",
-        album="Opening 1",
-        duration=142,
-        file_path="gorosei.mp3",
-    ),
-]
-
-# Create test playlists
-playlist1 = PlaylistModel(
-    playlist_id=str(uuid.uuid4()),
-    name="Straw Hat Crew",
-    tracks=[
-        random_tracks[1],  # One Piece
-        random_tracks[4],  # Gear 5
-        random_tracks[10],  # Binks Sake
-        random_tracks[11],  # We Are!
-    ],
-)
-
-playlist2 = PlaylistModel(
-    playlist_id=str(uuid.uuid4()),
-    name="Epic Battles",
-    tracks=[
-        random_tracks[0],  # Gorosei Theme
-        random_tracks[2],  # Luffy's Awakening
-        random_tracks[3],  # Zoro vs King
-        random_tracks[5],  # Nika Drums
-        random_tracks[9],  # The Very Strongest
-    ],
-)
-
-playlist3 = PlaylistModel(
-    playlist_id=str(uuid.uuid4()),
-    name="Emotional Moments",
-    tracks=[
-        random_tracks[6],  # Shanks Arrival
-        random_tracks[7],  # Going Merry
-        random_tracks[8],  # Overtaken
-    ],
-)
-
-test_playlists = [playlist1, playlist2, playlist3]
+from backend.music_manager import MusicManager
 
 
 def main(page: ft.Page):
@@ -149,7 +15,8 @@ def main(page: ft.Page):
 
     # page.theme = ft.Theme(color_scheme_seed=ft.Colors.CYAN_100)
 
-    playlist_manager = PlaylistManager(test_playlists)
+    music_manager = MusicManager()
+    playlist_manager = PlaylistManager(music_manager)
     playlist_manager.add_to_page(page)
 
     def on_event(e: ft.WindowEvent, page: ft.Page):
