@@ -108,6 +108,7 @@ class PlaylistManager:
             return
         playlist = self.state_manager.get_playlist(playlist_id)
         current_playlist = self.state_manager.get_active_playlist()
+        current_track = self.state_manager.get_active_track()
 
         if playlist is None:
             return
@@ -115,10 +116,12 @@ class PlaylistManager:
         # Same playlist
         if current_playlist == playlist:
             if track_id is not None:
-                self.state_manager.update_last_state(
-                    playlist, playlist.get_active_track()
-                )
-                playlist.set_active_track(track_id)
+
+                if current_track is not None and current_track.id != track_id:
+                    self.state_manager.update_last_state(playlist, current_track)
+
+                    playlist.set_active_track(track_id)
+                    self.pause()
 
             self.pause() if self.playback_controller.is_playing else self.play()
 
@@ -155,6 +158,19 @@ class PlaylistManager:
             playlist.track_order_list = playlist_ui.get_uuid_list()
         self.tab_area.update()
 
+    def _on_focus_change(self, playlist_id: str):
+        """Handle playlist focus change - sync loop button and play button states"""
+        state = self.state_manager
+        playlist = state.get_playlist(playlist_id)
+
+        self.tab_area.toggle_play_button(
+            playlist_id == state.active_playlist_id
+            and self.playback_controller.is_playing
+        )
+
+        if playlist is not None:
+            self.tab_area.toggle_loop_button(playlist.is_looping)
+
     def event_bindings(self):
         """Bind all UI events to handlers"""
         tab_area = self.tab_area
@@ -165,9 +181,8 @@ class PlaylistManager:
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
         tab_area.on_drop = self.on_track_drop
-        tab_area.on_focus_change = lambda playlist_id: self.tab_area.toggle_play_button(
-            playlist_id == state.active_playlist_id
-            and self.playback_controller.is_playing
+        tab_area.on_focus_change = lambda playlist_id: self._on_focus_change(
+            playlist_id
         )
         tab_area.on_rename_playlist = lambda playlist_id, new_name: (
             state.rename_playlist(
