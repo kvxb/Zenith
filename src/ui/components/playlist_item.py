@@ -191,10 +191,12 @@ class PlaylistItem(ft.Container):
     def toggle_loop_style(self, is_looping: bool):
         """Toggle visual style to indicate track is looping"""
         if is_looping:
-            # Add visual indicator for looping track (e.g., different border color)
+            # Add visual indicator for looping track (e.g., different border color
+            self.tooltip = "Looping"
             self.border = ft.border.all(2, ft.Colors.PRIMARY)
         else:
             # Reset to normal border
+            self.tooltip = ""
             if self.is_playing:
                 self.border = ft.border.all(1, ft.Colors.PRIMARY)
             else:
