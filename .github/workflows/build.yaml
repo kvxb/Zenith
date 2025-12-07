@@ -32,7 +32,6 @@ jobs:
           pip install flet Pillow pyinstaller -r requirements.txt
         shell: bash
 
-      ---
 
       - name: Run PyInstaller Build
         # This single command works for both OSes because all paths and arguments
@@ -40,7 +39,6 @@ jobs:
         run: pyinstaller main.spec 
         shell: bash
 
-      ---
       
       # --- Artifact Upload ---
       - name: Rename and Prepare Executable
