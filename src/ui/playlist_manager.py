@@ -19,6 +19,7 @@ class PlaylistManager:
         playlists = self.state_manager.playlists
         self.tab_area = UiMapper.playlist_tab_area_from_models(playlists)
 
+        self.tab_area.set_library_name(music_manager.get_library_name())
         self.event_bindings()
 
     def add_to_page(self, page: ft.Page):
@@ -226,6 +227,12 @@ class PlaylistManager:
         )
         tab_area.on_add_track = lambda playlist_id: self.on_add_track(playlist_id)
         tab_area.on_volume_change = lambda volume: self.audio_manager.set_volume(volume)
+
+        def set_name(name: str):
+            state.music_manager.set_library_name(name)
+            return None
+
+        tab_area.on_library_name_change = set_name
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
@@ -491,12 +498,19 @@ class PlaylistManager:
         """Show the add track form dialog"""
         print(f"Opening add track form for playlist {playlist_id}")
 
-        def handle_track_submit(track_name: str, artist: str):
+        def handle_track_submit(track_name: str, artist: str) -> bool:
             id = self.state_manager.music_manager.add_track_to_playlist(
                 playlist_id, artist, track_name
             )
+            if not id:
+                return False
 
-            return id
+            new_track = self.state_manager.music_manager.get_track_by_id(id)
+            if new_track is None:
+                return False
+
+            self.add_track(playlist_id, new_track)
+            return True
 
         # Create and show the form dialog
         add_track_form = AddTrackForm(on_submit=handle_track_submit)

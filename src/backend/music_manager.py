@@ -29,6 +29,7 @@ Public API for frontend:
 - get_metadata()                Get any metadata
 """
 
+
 class MusicManager:
     """Main interface for Spotify import, YouTube download, and playlist management."""
 
@@ -54,16 +55,16 @@ class MusicManager:
 
     def set_library_name(self, name: str) -> bool:
         """Set the library name in metadata."""
-        return self.db.set_metadata('LIBRARY_NAME', name)
-    
+        return self.db.set_metadata("LIBRARY_NAME", name)
+
     def get_library_name(self) -> str:
         """Get the library name from metadata."""
-        return self.db.get_metadata('LIBRARY_NAME', 'My Library')
-    
+        return self.db.get_metadata("LIBRARY_NAME", "My Library")
+
     def set_metadata(self, key: str, value: str) -> bool:
         """Set any metadata key-value pair."""
         return self.db.set_metadata(key, value)
-    
+
     def get_metadata(self, key: str, default: str = "") -> str:
         """Get any metadata value by key."""
         return self.db.get_metadata(key, default)
@@ -115,11 +116,11 @@ class MusicManager:
         try:
             playlist_id_int = int(playlist_id)
             track_id_int = int(track_id)
-            
+
             self.db.remove_track_from_playlist(playlist_id_int, track_id_int)
             print(f"✓ Removed track ID {track_id} from playlist ID {playlist_id}")
             return True
-            
+
         except ValueError:
             print(f"Invalid ID format")
             return False
@@ -127,41 +128,47 @@ class MusicManager:
             print(f"Error removing track from playlist: {e}")
             return False
 
-    def add_track_to_playlist(self, playlist_id: str, artist: Optional[str] = None, 
-                              title: Optional[str] = None, track_id: Optional[str] = None, 
-                              album: str = "", icon: Optional[str] = None) -> str:
+    def add_track_to_playlist(
+        self,
+        playlist_id: str,
+        artist: Optional[str] = None,
+        title: Optional[str] = None,
+        track_id: Optional[str] = None,
+        album: str = "",
+        icon: Optional[str] = None,
+    ) -> str:
         """
         Add track to playlist. Two modes:
         1. Add existing track: pass track_id only
         2. Download new track: pass artist and title (will download from YouTube)
-        
+
         Returns: New track ID if successful, empty string if failed
         """
         try:
             playlist_id_int = int(playlist_id)
-            
+
             # Mode 1: Add existing track
             if track_id:
                 track_id_int = int(track_id)
                 track_info = self.get_track_by_id(track_id)
                 if not track_info:
                     return ""
-                
+
                 # Check if file is already downloaded
-                file_downloaded = bool(track_info["file_path"])
-                
+                file_downloaded = bool(track_info.file_path)
+
                 new_track_id = self.db.add_track_to_playlist(
                     playlist_id=playlist_id_int,
-                    title=track_info["title"],
-                    artist=track_info["artist"],
-                    album=track_info["album"],
-                    duration=track_info["duration"],
-                    icon=track_info.get("icon")
+                    title=track_info.title,
+                    artist=track_info.artist,
+                    album=track_info.album,
+                    duration=track_info.duration,
+                    icon=track_info.file_path if file_downloaded else icon,
                 )
-                
-                print(f"✓ Copied track '{track_info['title']}' to playlist")
+
+                print(f"✓ Copied track '{track_info.title}' to playlist")
                 return str(new_track_id)
-            
+
             # Mode 2: Download new track
             elif artist and title:
                 # Add with 0 duration initially
@@ -171,23 +178,23 @@ class MusicManager:
                     artist=artist,
                     album=album,
                     duration=0,
-                    icon=icon
+                    icon=icon,
                 )
-                
+
                 print(f"✓ Added '{title}' by '{artist}' to database")
-                
+
                 # Download from YouTube
                 success = self.downloader.download_track(new_track_id)
-                
+
                 if success:
                     return str(new_track_id)
                 else:
                     return ""
-            
+
             else:
                 print("Error: Must provide either track_id OR (artist and title)")
                 return ""
-                    
+
         except Exception as e:
             print(f"Error adding track: {e}")
             return ""
@@ -201,31 +208,43 @@ class MusicManager:
             print(f"Error creating playlist: {e}")
             return ""
 
-    def get_track_by_id(self, track_id: str) -> Optional[Dict[str, Any]]:
+    def get_track_by_id(self, track_id: str) -> TrackModel | None:
         """Get detailed info for a single track."""
         try:
             track_id_int = int(track_id)
             conn = self.db._get_connection()
             cursor = conn.cursor()
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 SELECT id, title, artist, album, duration, path_mp3, icon
                 FROM tracks WHERE id = ?
-            """, (track_id_int,))
-            
+            """,
+                (track_id_int,),
+            )
+
             track = cursor.fetchone()
             if not track:
                 return None
-                
-            return {
-                "track_id": str(track[0]),
-                "title": track[1],
-                "artist": track[2],
-                "album": track[3],
-                "duration": track[4],
-                "file_path": track[5] or "",
-                "icon": track[6] or ""
-            }
+
+            # return {
+            #     "track_id": str(track[0]),
+            #     "title": track[1],
+            #     "artist": track[2],
+            #     "album": track[3],
+            #     "duration": track[4],
+            #     "file_path": track[5] or "",
+            #     "icon": track[6] or ""
+            # }
+            return TrackModel(
+                track_id=str(track[0]),
+                title=track[1],
+                artist=track[2],
+                album=track[3] or "",
+                duration=track[4],
+                file_path=track[5] or "",
+                image_path=track[6] or "",
+            )
         except ValueError:
             print(f"Invalid track ID: {track_id}")
             return None
@@ -239,26 +258,31 @@ class MusicManager:
             playlist_id_int = int(playlist_id)
             conn = self.db._get_connection()
             cursor = conn.cursor()
-            
+
             # Get playlist info
-            cursor.execute("SELECT id, name FROM playlists WHERE id = ?", (playlist_id_int,))
+            cursor.execute(
+                "SELECT id, name FROM playlists WHERE id = ?", (playlist_id_int,)
+            )
             playlist = cursor.fetchone()
             if not playlist:
                 return None
-            
+
             playlist_id_db, playlist_name = playlist
-            
+
             # Get tracks for this playlist
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
-            """, (playlist_id_int,))
-            
+            """,
+                (playlist_id_int,),
+            )
+
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
-            
+
             for track_id, title, artist, album, duration, path_mp3 in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
@@ -271,11 +295,9 @@ class MusicManager:
                 track_models.append(track_model)
 
             return PlaylistModel(
-                playlist_id=str(playlist_id_db),
-                name=playlist_name,
-                tracks=track_models
+                playlist_id=str(playlist_id_db), name=playlist_name, tracks=track_models
             )
-            
+
         except ValueError:
             print(f"Invalid playlist ID: {playlist_id}")
             return None
@@ -306,7 +328,7 @@ class MusicManager:
 
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
-            
+
             for track_id, title, artist, album, duration, path_mp3 in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
@@ -329,18 +351,17 @@ class MusicManager:
         """Find track ID by artist, title, and optional album."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
-        
+
         if album:
             cursor.execute(
                 "SELECT id FROM tracks WHERE artist = ? AND title = ? AND album = ?",
-                (artist, title, album)
+                (artist, title, album),
             )
         else:
             cursor.execute(
-                "SELECT id FROM tracks WHERE artist = ? AND title = ?",
-                (artist, title)
+                "SELECT id FROM tracks WHERE artist = ? AND title = ?", (artist, title)
             )
-        
+
         result = cursor.fetchone()
         return str(result[0]) if result else None
 
@@ -348,18 +369,18 @@ class MusicManager:
         """Find playlist ID by name."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT id FROM playlists WHERE name = ?", (name,))
         result = cursor.fetchone()
-    
+
         return str(result[0]) if result else None
 
     def get_all_playlist_ids(self) -> Dict[str, str]:
         """Get all playlist names and their IDs."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT id, name FROM playlists")
         results = cursor.fetchall()
-        
+
         return {name: str(pid) for pid, name in results}

@@ -123,12 +123,9 @@ class PlaylistStateManager:
                 return False
 
             target_playlist.add_track(track)
+            print(f"Adding track {track.id} to playlist {target_playlist.id}")
             self.music_manager.add_track_to_playlist(
-                target_playlist.id,
-                track.artist,
-                track.title,
-                track.album,
-                track.image_path,
+                target_playlist.id, "", "", track.id
             )
 
         return True
@@ -186,7 +183,7 @@ class PlaylistStateManager:
         playlist = self.get_playlist(playlist_id)
         if playlist is None:
             return False
-            
+
         track = playlist.get_track(track_id)
         if track:
             track.is_looping = not track.is_looping

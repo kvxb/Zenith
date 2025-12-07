@@ -21,9 +21,16 @@ class PlaylistTabArea(ft.Container):
         )
 
     def _library_label(self):
+        self.library_name_field = ft.TextField(
+            value="My Library",
+            expand=True,
+            border=ft.InputBorder.NONE,
+            on_submit=lambda e: self.on_library_name_change(e.control.value),
+            on_blur=lambda e: self.on_library_name_change(e.control.value),
+        )
         return ft.Row(
             controls=[
-                ft.TextField(value="My Library", expand=True),
+                self.library_name_field,
                 ft.PopupMenuButton(
                     items=[
                         ft.PopupMenuItem(
@@ -191,6 +198,7 @@ class PlaylistTabArea(ft.Container):
         self.on_copy_track = lambda playlist_id, track_id: None
         self.on_add_track = lambda playlist_id: None
         self.on_volume_change = lambda volume: None
+        self.on_library_name_change = lambda name: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -483,6 +491,11 @@ class PlaylistTabArea(ft.Container):
             f"Are you sure you want to delete '{track.title}' from this playlist?",
             on_confirm,
         )
+
+    def set_library_name(self, new_name: str):
+        """Set the library name in the header"""
+        self.library_name_field.value = new_name
+        self.library_name_field.update()
 
     def update_ui_on_play(
         self,
