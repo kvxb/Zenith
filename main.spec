@@ -6,15 +6,9 @@ a = Analysis(
     binaries=[],
     datas=[
         # 1. LOCAL CODE PACKAGES (ui and backend)
-        # (SOURCE, DESTINATION)
         ('src/ui', 'ui'),
         ('src/backend', 'backend'),
-        
-        # 2. ASSETS (The 'gorosei.mp3' file and any other assets)
-        ('src/assets', 'assets'),
-        
-        # 3. STORAGE/DATA FILES (If your app reads/writes data files)
-        ('src/storage', 'storage'),
+       
     ],
     hiddenimports=['sqlite3', 'spotipy', 'yt_dlp'], # Force inclusion of sqlite3's C library
     hookspath=[],

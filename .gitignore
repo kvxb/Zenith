@@ -19,3 +19,6 @@ Thumbs.db
 playlists_songs.db
 .spotify_pkce_cache
 src/assets/*
+
+/build/*
+/dist/*
