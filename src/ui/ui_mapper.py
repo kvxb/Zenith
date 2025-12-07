@@ -12,6 +12,7 @@ class UiMapper:
             author=track.artist,
             album=track.album,
             duration=track.formatted_duration(),
+            image_path=track.image_path,
         )
 
     @staticmethod

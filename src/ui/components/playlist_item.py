@@ -12,6 +12,7 @@ class PlaylistItem(ft.Container):
         author: str,
         album: str,
         duration: str,
+        image_path: str = "",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -21,6 +22,7 @@ class PlaylistItem(ft.Container):
         self.author = author
         self.album = album
         self.duration = duration
+        self.image_path = image_path
 
         self.on_card_click = lambda track_id: print(f"Item clicked {track_id}")
         self.on_delete = lambda track_id: print(f"Delete track {track_id}")
@@ -39,6 +41,35 @@ class PlaylistItem(ft.Container):
         )
 
         name_author_column = self._name_author_column()
+
+        # Album art image similar to Spotify
+        if self.image_path:
+            self.album_art = ft.Container(
+                content=ft.Image(
+                    src=self.image_path,
+                    width=48,
+                    height=48,
+                    fit=ft.ImageFit.COVER,
+                ),
+                width=48,
+                height=48,
+                border_radius=4,
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            )
+        else:
+            # Fallback to icon if no image
+            self.album_art = ft.Container(
+                content=ft.Icon(
+                    name=ft.Icons.MUSIC_NOTE,
+                    size=40,
+                    color=ft.Colors.GREY_400,
+                ),
+                width=48,
+                height=48,
+                bgcolor=ft.Colors.SURFACE,
+                border_radius=4,
+                alignment=ft.alignment.center,
+            )
 
         self.menu_button = ft.PopupMenuButton(
             items=[
@@ -73,6 +104,7 @@ class PlaylistItem(ft.Container):
                     ],
                     width=40,
                 ),
+                self.album_art,
                 ft.Container(
                     content=ft.Draggable(
                         group="playlist_tracks",
