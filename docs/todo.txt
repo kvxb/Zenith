@@ -1,12 +1,10 @@
 backend
-fix the bug where everytime you open the app the playlists dont appear adn they multiply when import spotify
 option for selective spotify import
-option for searching for a song to locally download
 add windows file system support
 fix fragile path for /src/assets 
 fix spotify development stuff
-add database methods for order switching and other QOL
 icon support
+fix the need to always import from spotify even though the files are downloaded locally
 
 
 frontend

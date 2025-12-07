@@ -75,16 +75,55 @@ class SimpleDownloader:
         
         if file_path:
             file_name = Path(file_path).name
+            
+            # Get duration from the downloaded file
+            duration = self._get_duration_from_file(file_path)
+            
             with self.lock:
                 cursor = self.db._get_connection().cursor()
+                # Update both path AND duration
                 cursor.execute(
-                    "UPDATE tracks SET path_mp3 = ? WHERE id = ?", 
-                    (file_name, track_id)
+                    "UPDATE tracks SET path_mp3 = ?, duration = ? WHERE id = ?", 
+                    (file_name, duration, track_id)
                 )
+                
+                # Update playlist total duration with the actual duration
+                cursor.execute("""
+                    UPDATE playlists 
+                    SET total_duration = total_duration + ? 
+                    WHERE id IN (
+                        SELECT playlist_id 
+                        FROM playlist_tracks 
+                        WHERE track_id = ?
+                    )
+                """, (duration, track_id))
+                
                 self.db._get_connection().commit()
-            return track_id, True, f"✓ Downloaded: {artist} - {title}"
+                
+            return track_id, True, f"✓ Downloaded: {artist} - {title} ({duration}s)"
         else:
             return track_id, False, f"✗ Failed: {artist} - {title}"
+
+    def _get_duration_from_file(self, file_path: str) -> int:
+        """Get duration of MP3 file in seconds."""
+        try:
+            from mutagen.mp3 import MP3
+            
+            audio = MP3(file_path)
+            return int(audio.info.length)
+            
+        except Exception as e:
+            print(f"Error getting duration for {file_path}: {e}")
+            # Try with mutagen.File as fallback
+            try:
+                from mutagen import File
+                audio = File(file_path)
+                if audio and audio.info:
+                    return int(audio.info.length)
+            except:
+                pass
+                
+            return 0  # Return 0 if we can't get duration
 
     def download_track(self, track_id: int) -> bool:
         """Download single track by ID."""

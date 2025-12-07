@@ -98,6 +98,26 @@ class SimpleMusicDB:
 
         conn.commit()
 
+    def update_playlist_name(self, playlist_id: int, new_name: str) -> bool:
+        """Update playlist name. Returns True if successful."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "UPDATE playlists SET name = ? WHERE id = ?",
+            (new_name, playlist_id)
+        )
+        
+        updated = cursor.rowcount > 0
+        conn.commit()
+        
+        if updated:
+            print(f"✓ Playlist ID {playlist_id} renamed to '{new_name}'")
+        else:
+            print(f"✗ Playlist ID {playlist_id} not found")
+        
+        return updated
+
     def add_track_to_playlist(self, playlist_id, title, artist, album, duration, icon):
         """Add track to playlist, reusing existing tracks when possible."""
         conn = self._get_connection()
