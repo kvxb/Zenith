@@ -44,8 +44,8 @@ class NowPlaying(ft.Container):
             min=0,
             max=180000,
             value=0,
-            active_color=ft.Colors.CYAN_400,
-            inactive_color=ft.Colors.GREY_700,
+            active_color=ft.Colors.PRIMARY,
+            inactive_color=ft.Colors.OUTLINE,
             on_change=self._on_change,
             on_change_end=self._slider_scrub_end,
             on_change_start=lambda e: self._on_slider_start(e),
@@ -54,6 +54,7 @@ class NowPlaying(ft.Container):
         self.previous_btn = ft.IconButton(
             icon=ft.Icons.SKIP_PREVIOUS_ROUNDED,
             icon_size=24,
+            tooltip="Previous track",
             on_click=lambda e: (
                 self.on_previous_click() if self.on_previous_click else None
             ),
@@ -61,6 +62,7 @@ class NowPlaying(ft.Container):
         self.play_pause_btn = ft.IconButton(
             icon=ft.Icons.PLAY_CIRCLE_FILLED,
             icon_size=36,
+            tooltip="Play/Pause",
             on_click=lambda e: (
                 self.on_play_pause_click("playing")
                 if self.on_play_pause_click
@@ -70,6 +72,7 @@ class NowPlaying(ft.Container):
         self.next_btn = ft.IconButton(
             icon=ft.Icons.SKIP_NEXT_ROUNDED,
             icon_size=24,
+            tooltip="Next track",
             on_click=lambda e: self.on_next_click() if self.on_next_click else None,
         )
 
@@ -103,7 +106,7 @@ class NowPlaying(ft.Container):
         )
 
         self.padding = ft.padding.only(left=15, right=15, top=5, bottom=5)
-        self.bgcolor = ft.Colors.BLUE_GREY_900
+        self.bgcolor = ft.Colors.SECONDARY_CONTAINER
         self.visible = True
         self.height = 0
         self.animate_size = ft.Animation(300, ft.AnimationCurve.EASE_OUT)

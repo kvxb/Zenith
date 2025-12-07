@@ -38,7 +38,7 @@ class PlaylistTabArea(ft.Container):
                         ),
                     ],
                     icon=ft.Icons.ADD,
-                    tooltip="Add Playlist",
+                    tooltip="Add new playlist",
                 ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -67,11 +67,8 @@ class PlaylistTabArea(ft.Container):
 
         print(f"Reordering playlist cards from {old_index} to {new_index}")
         element_to_move = target.controls.pop(old_index)
+        target.update()
         target.controls.insert(new_index, element_to_move)
-
-        if isinstance(element_to_move, PlaylistCard):
-            element_to_move.on_click = lambda id: self._on_card_click(id)
-
         target.update()
 
     def _header(self):
@@ -85,9 +82,20 @@ class PlaylistTabArea(ft.Container):
 
     def _play_button(self):
         self.play_button: ft.IconButton = ft.IconButton(
-            icon=ft.Icons.PLAY_ARROW, on_click=self.on_play_button_click
+            icon=ft.Icons.PLAY_ARROW,
+            tooltip="Play playlist",
+            on_click=self.on_play_button_click
         )
         return self.play_button
+
+    def _loop_button(self):
+        self.loop_button: ft.IconButton = ft.IconButton(
+            icon=ft.Icons.REPEAT,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Loop playlist",
+            on_click=self._on_loop_playlist,
+        )
+        return self.loop_button
 
     def _body_header(self):
         self.menu_button = ft.PopupMenuButton(
@@ -111,7 +119,12 @@ class PlaylistTabArea(ft.Container):
         return ft.Row(
             controls=[
                 self._play_button(),
-                ft.IconButton(icon=ft.Icons.SHUFFLE, on_click=self._on_shuffle),
+                ft.IconButton(
+                    icon=ft.Icons.SHUFFLE,
+                    tooltip="Shuffle playlist",
+                    on_click=self._on_shuffle
+                ),
+                self._loop_button(),
                 ft.Container(expand=True),
                 self.menu_button,
             ],
@@ -139,7 +152,8 @@ class PlaylistTabArea(ft.Container):
         self._active_tab_uuid = ""
         self.on_play = lambda playlist_id, track_id: None
         self.on_reorder = lambda id, old_idx, new_idx: None
-        self.on_loop = lambda: None
+        self.on_loop_playlist = lambda playlist_id: None
+        self.on_loop_track = lambda track_id: None
         self.on_search = lambda query: None
         self.on_drop = lambda playlist_id, track_id: None
         self.on_focus_change = lambda playlist_id: None
@@ -204,6 +218,7 @@ class PlaylistTabArea(ft.Container):
         playlist.on_copy_track = lambda track_id: self.on_copy_track(
             playlist_card.id, track_id
         )
+        playlist.on_loop_track = lambda track_id: self.on_loop_track(track_id)
         # Add to controls
         self.playlist_card_list.controls.append(playlist_card)
         self.playlist_stack.controls.append(playlist)
@@ -311,6 +326,18 @@ class PlaylistTabArea(ft.Container):
         if playlist is not None:
             playlist.shuffle()
 
+    def _on_loop_playlist(self, e):
+        """Toggle loop for the active playlist"""
+        playlist_id = self._active_tab_uuid
+        if playlist_id:
+            # Toggle the button color to show state
+            if self.loop_button.icon_color == ft.Colors.OUTLINE:
+                self.loop_button.icon_color = ft.Colors.PRIMARY
+            else:
+                self.loop_button.icon_color = ft.Colors.OUTLINE
+            self.loop_button.update()
+            self.on_loop_playlist(playlist_id)
+
     def _on_delete_playlist(self):
         """Handle delete playlist from menu"""
         playlist_id = self._active_tab_uuid
@@ -337,9 +364,6 @@ class PlaylistTabArea(ft.Container):
             self.menu_button.items[0].disabled = not enabled
             self.menu_button.update()
 
-    def _on_loop(self, e):
-        self.on_loop()
-
     def _on_item_click(self, playlist_id: str, track_id: str):
         print(f"Item clicked in tab area: playlist={playlist_id}, track={track_id}")
         self.on_play(playlist_id, track_id)
@@ -348,11 +372,20 @@ class PlaylistTabArea(ft.Container):
         self.on_play(self._active_tab_uuid, None)
 
     def toggle_play_button(self, is_playing: bool):
-        if is_playing:
-            self.play_button.icon = ft.Icons.PAUSE
-        else:
-            self.play_button.icon = ft.Icons.PLAY_ARROW
+        self.play_button.icon = ft.Icons.PAUSE if is_playing else ft.Icons.PLAY_ARROW
         self.play_button.update()
+
+    def toggle_loop_button(self, is_looping: bool):
+        self.loop_button.icon_color = (
+            ft.Colors.PRIMARY if is_looping else ft.Colors.OUTLINE
+        )
+        self.loop_button.update()
+
+    def toggle_track_loop(self, track_id: str, is_looping: bool):
+        playlist = self.get_active_playlist()
+        playlist_item = playlist.get_track_item(track_id) if playlist else None
+        if playlist_item:
+            playlist_item.toggle_loop_style(is_looping)
 
     def toggle_body_header(self, visible: bool):
         self.body.controls[1].visible = visible

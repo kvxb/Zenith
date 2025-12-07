@@ -108,23 +108,28 @@ class PlaylistManager:
             return
         playlist = self.state_manager.get_playlist(playlist_id)
         current_playlist = self.state_manager.get_active_playlist()
+        current_track = self.state_manager.get_active_track()
 
         if playlist is None:
             return
 
+        # Same playlist
         if current_playlist == playlist:
-            # Same playlist
             if track_id is not None:
-                self.state_manager.update_last_state(
-                    playlist, playlist.get_active_track()
-                )
-                playlist.set_active_track(track_id)
-                self.play()
-            else:
-                self.pause() if self.playback_controller.is_playing else self.play()
+                if current_track is None:
+                    playlist.set_active_track(track_id)
+                    self.play()
+                    return
+
+                if current_track is not None and current_track.id != track_id:
+                    self.state_manager.update_last_state(playlist, current_track)
+
+                    playlist.set_active_track(track_id)
+                    self.pause()
+
+            self.pause() if self.playback_controller.is_playing else self.play()
 
         else:
-            # Different playlist
             self.pause(update_ui=False)
             self.state_manager.set_active_playlist(playlist_id)
 
@@ -142,6 +147,10 @@ class PlaylistManager:
             track = self.state_manager.get_active_track()
             if track is not None:
                 track.played_time = 0
+                if track.is_looping:
+                    print("Replaying current track due to loop")
+                    self.play()
+                    return
 
             print("Track completed, moving to next track")
             self.play_next_track()
@@ -155,33 +164,58 @@ class PlaylistManager:
         playlist_ui = self.tab_area.get_playlist(id)
         if playlist_ui is not None:
             playlist.track_order_list = playlist_ui.get_uuid_list()
-        self.tab_area.update()
+        self.page.update()
+
+    def _on_focus_change(self, playlist_id: str):
+        """Handle playlist focus change - sync loop button and play button states"""
+        state = self.state_manager
+        playlist = state.get_playlist(playlist_id)
+
+        self.tab_area.toggle_play_button(
+            playlist_id == state.active_playlist_id
+            and self.playback_controller.is_playing
+        )
+
+        if playlist is not None:
+            self.tab_area.toggle_loop_button(playlist.is_looping)
+
+    def _on_loop_playlist(self, playlist_id: str):
+        is_looping = self.state_manager.toggle_loop(playlist_id)
+        self.tab_area.toggle_loop_button(is_looping)
+
+    def _on_loop_track(self, track_id: str):
+        """Handle track loop toggle and update UI"""
+        is_looping = self.state_manager.toggle_track_loop(track_id)
+        self.tab_area.toggle_track_loop(track_id, is_looping)
 
     def event_bindings(self):
         """Bind all UI events to handlers"""
         tab_area = self.tab_area
         now_playing = tab_area.now_playing
         audio = self.audio_manager.audio
+        state = self.state_manager
 
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
         tab_area.on_drop = self.on_track_drop
-        tab_area.on_focus_change = lambda playlist_id: self.tab_area.toggle_play_button(
-            playlist_id == self.state_manager.active_playlist_id
-            and self.playback_controller.is_playing
+        tab_area.on_focus_change = lambda playlist_id: self._on_focus_change(
+            playlist_id
         )
         tab_area.on_rename_playlist = lambda playlist_id, new_name: (
-            self.state_manager.rename_playlist(
+            state.rename_playlist(
                 playlist_id, new_name if new_name != "" else "Untitled Playlist"
             )
         )
         tab_area.on_add_empty_playlist = lambda: self.add_playlist()
         tab_area.on_add_from_spotify = self.get_from_spotify
 
-        tab_area.on_delete_playlist = self.remove_playlist
         tab_area.on_delete_track = self.on_delete_track
         tab_area.on_copy_track = self.on_copy_track
         tab_area.on_paste_track = self.on_paste_track
+        tab_area.on_loop_playlist = lambda playlist_id: self._on_loop_playlist(
+            playlist_id
+        )
+        tab_area.on_loop_track = lambda track_id: self._on_loop_track(track_id)
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
@@ -304,6 +338,7 @@ class PlaylistManager:
 
         if current_playlist is None:
             return
+
         if current_track is None:
             current_playlist.set_active_track("first")
             current_track = self.state_manager.get_active_track()
@@ -316,7 +351,7 @@ class PlaylistManager:
         seek = current_track.played_time
         self.playback_controller.play(current_track, seek)
 
-        self.state_manager.update_last_state(current_playlist, current_track)
+        # self.state_manager.update_last_state(current_playlist, current_track)
 
         self.tab_area.update_ui_on_play(
             previous_playlist,

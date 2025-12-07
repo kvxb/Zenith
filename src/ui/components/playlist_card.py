@@ -51,7 +51,7 @@ class PlaylistCard(ft.Card):
         self.playing_indicator = ft.Icon(
             name=ft.Icons.MUSIC_NOTE,
             size=20,
-            color=ft.Colors.CYAN_400,
+            color=ft.Colors.PRIMARY,
             visible=False,
         )
 
@@ -98,7 +98,7 @@ class PlaylistCard(ft.Card):
         """Set visual state for active (focused) playlist"""
         if is_active:
             self.margin = ft.margin.all(2)
-            self.shadow_color = ft.Colors.CYAN_400
+            self.shadow_color = ft.Colors.PRIMARY
             self.elevation = 16
         else:
             self.margin = ft.margin.all(5)
@@ -110,7 +110,7 @@ class PlaylistCard(ft.Card):
         """Highlight this playlist card"""
         self.playing_indicator.visible = show
         if show:
-            self.color = ft.Colors.CYAN_700
+            self.color = ft.Colors.SURFACE_CONTAINER_HIGHEST
         else:
             self.color = None
         self.update()
