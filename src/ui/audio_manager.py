@@ -65,3 +65,9 @@ class AudioManager:
             print(f"Audio loaded {self.audio.src} seeking to {self._seek_position} ms")
             self.audio.resume()
             self.audio.update()
+
+    def set_volume(self, volume: float):
+        """Set audio volume (0.0 to 1.0)"""
+        print(f"Setting volume to {volume}")
+        self.audio.volume = volume
+        self.audio.update()

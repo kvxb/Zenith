@@ -217,6 +217,7 @@ class PlaylistManager:
         )
         tab_area.on_loop_track = lambda track_id: self._on_loop_track(track_id)
         tab_area.on_add_track = lambda playlist_id: self.on_add_track(playlist_id)
+        tab_area.on_volume_change = lambda volume: self.audio_manager.set_volume(volume)
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(

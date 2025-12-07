@@ -71,11 +71,31 @@ class PlaylistTabArea(ft.Container):
         target.controls.insert(new_index, element_to_move)
         target.update()
 
+    def _volume_control(self):
+        self.volume_slider = ft.Slider(
+            min=0,
+            max=100,
+            value=50,
+            divisions=100,
+            label="{value}%",
+            on_change=self._on_volume_change,
+        )
+        return ft.Row(
+            controls=[
+                ft.Icon(ft.Icons.VOLUME_DOWN, size=20),
+                self.volume_slider,
+                ft.Icon(ft.Icons.VOLUME_UP, size=20),
+            ],
+            spacing=5,
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
+
     def _header(self):
         self.header = ft.Column(
             controls=[
                 self._playlist_card_list_header(),
                 self._playlist_card_list(),
+                self._volume_control(),
             ],
         )
         return self.header
@@ -170,6 +190,7 @@ class PlaylistTabArea(ft.Container):
         self.on_delete_track = lambda playlist_id, track_id: None
         self.on_copy_track = lambda playlist_id, track_id: None
         self.on_add_track = lambda playlist_id: None
+        self.on_volume_change = lambda volume: None
 
         self.header_container = ft.Container(
             content=self._header(),
@@ -369,6 +390,11 @@ class PlaylistTabArea(ft.Container):
     def _on_add_from_spotify(self):
         """Handle import from Spotify from menu"""
         self.on_add_from_spotify()
+
+    def _on_volume_change(self, e):
+        """Handle volume slider change"""
+        if e.control.value is not None:
+            self.on_volume_change(e.control.value / 100.0)
 
     def enable_paste_track(self, enabled: bool):
         """Enable or disable the paste track menu item"""
