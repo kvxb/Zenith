@@ -1,15 +1,15 @@
 backend
+
 option for selective spotify import
 add windows file system support
 fix fragile path for /src/assets 
-fix spotify development stuff
 icon support
-fix the need to always import from spotify even though the files are downloaded locally
+fix spotify development stuff
 
 
 frontend
-volume mixer
+
 keybinds for pause, next, that work globally without the tab being in focus
 download animation and ETA
-color schemes like nvim
+color schemes
 album names are too far to the right a lot of empty space
