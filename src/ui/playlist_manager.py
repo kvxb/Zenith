@@ -112,19 +112,17 @@ class PlaylistManager:
         if playlist is None:
             return
 
+        # Same playlist
         if current_playlist == playlist:
-            # Same playlist
             if track_id is not None:
                 self.state_manager.update_last_state(
                     playlist, playlist.get_active_track()
                 )
                 playlist.set_active_track(track_id)
-                self.play()
-            else:
-                self.pause() if self.playback_controller.is_playing else self.play()
+
+            self.pause() if self.playback_controller.is_playing else self.play()
 
         else:
-            # Different playlist
             self.pause(update_ui=False)
             self.state_manager.set_active_playlist(playlist_id)
 
@@ -162,16 +160,17 @@ class PlaylistManager:
         tab_area = self.tab_area
         now_playing = tab_area.now_playing
         audio = self.audio_manager.audio
+        state = self.state_manager
 
         tab_area.on_play = self.on_play
         tab_area.on_reorder = self.on_reorder
         tab_area.on_drop = self.on_track_drop
         tab_area.on_focus_change = lambda playlist_id: self.tab_area.toggle_play_button(
-            playlist_id == self.state_manager.active_playlist_id
+            playlist_id == state.active_playlist_id
             and self.playback_controller.is_playing
         )
         tab_area.on_rename_playlist = lambda playlist_id, new_name: (
-            self.state_manager.rename_playlist(
+            state.rename_playlist(
                 playlist_id, new_name if new_name != "" else "Untitled Playlist"
             )
         )
@@ -182,6 +181,8 @@ class PlaylistManager:
         tab_area.on_delete_track = self.on_delete_track
         tab_area.on_copy_track = self.on_copy_track
         tab_area.on_paste_track = self.on_paste_track
+        tab_area.on_loop_playlist = lambda playlist_id: state.toggle_loop(playlist_id)
+        tab_area.on_loop_track = lambda track_id: state.toggle_track_loop(track_id)
 
         self.audio_manager.on_sound_change = self.on_sound_change
         audio.on_position_changed = lambda e: now_playing.update_playback_position(
