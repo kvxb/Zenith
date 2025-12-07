@@ -169,6 +169,9 @@ class PlaylistManager:
         playlist_ui = self.tab_area.get_playlist(id)
         if playlist_ui is not None:
             playlist.track_order_list = playlist_ui.get_uuid_list()
+            self.state_manager.music_manager.reorder_tracks(
+                playlist.id, playlist.track_order_list
+            )
         self.page.update()
 
     def _on_focus_change(self, playlist_id: str):
@@ -253,39 +256,29 @@ class PlaylistManager:
 
     def on_track_drop(self, source_playlist_id: str, playlist_id: str, track_id: str):
         """Handle track drop on playlist card"""
-        print(
-            f"Track {track_id} dropped on playlist {playlist_id} from {source_playlist_id}"
-        )
-
         if source_playlist_id == playlist_id:
             print("Track dropped on the same playlist, no action taken")
             return
 
         source_playlist = self.state_manager.get_playlist(source_playlist_id)
-        if source_playlist is None:
-            print(f"Source playlist {source_playlist_id} not found")
-            return
-
         target_playlist = self.state_manager.get_playlist(playlist_id)
-        if target_playlist is None:
-            print(f"Target playlist {playlist_id} not found")
-            return
+        track = source_playlist.get_track(track_id) if source_playlist else None
 
-        track = source_playlist.get_track(track_id)
-        if track is None:
-            print(f"Track {track_id} not found in source playlist")
+        if track is None or target_playlist is None:
+            print("Invalid source/target playlist or track, no action taken")
             return
 
         was_active = self.state_manager.get_active_track() == track
 
-        self.remove_track(source_playlist_id, track.id)
-        self.add_track(playlist_id, track)
+        if not target_playlist.has_track(track.id):
+            self.remove_track(source_playlist_id, track.id)
+            self.add_track(playlist_id, track)
 
-        if was_active:
-            print("Moved track was active, updating playback state")
-            self.state_manager.set_active_playlist(playlist_id)
-            target_playlist.set_active_track(track.id)
-            self.play()
+            if was_active:
+                print("Moved track was active, updating playback state")
+                self.state_manager.set_active_playlist(playlist_id)
+                target_playlist.set_active_track(track.id)
+                self.play()
 
         self.tab_area.update()
 

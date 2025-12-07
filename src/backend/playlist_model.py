@@ -11,6 +11,9 @@ class PlaylistModel:
 
         self.is_looping = False
 
+    def has_track(self, track_id: str) -> bool:
+        return track_id in self.track_dict
+
     def get_track(self, track_id: str) -> TrackModel | None:
         return self.track_dict.get(track_id)
 
