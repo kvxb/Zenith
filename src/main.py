@@ -43,23 +43,38 @@ def main(page: ft.Page):
         print("PlaylistManager created", flush=True)
         playlist_manager.add_to_page(page)
         print("UI added to page", flush=True)
+        
+        def on_event(e: ft.WindowEvent, page: ft.Page):
+            if e.type == ft.WindowEventType.CLOSE:
+                print("Application is closing.")
+                try:
+                    playlist_manager.pause()
+                    playlist_manager.audio_manager.clear_audio()
+                except:
+                    pass
+                page.window.destroy()
+
+        page.window.prevent_close = True
+        page.window.on_event = lambda e: on_event(e, page)
+        
     except Exception as e:
         print(f"Error in main(): {e}", flush=True)
         traceback.print_exc()
-        page.add(ft.Text(f"Error: {e}", color="red"))
-        page.update()
-
-    def on_event(e: ft.WindowEvent, page: ft.Page):
-        if e.type == ft.WindowEventType.CLOSE:
-            print("Application is closing.")
-            playlist_manager.pause()
-            playlist_manager.audio_manager.clear_audio()
-            page.window.destroy()
-
-    page.window.prevent_close = True
-    page.window.on_event = lambda e: on_event(e, page)
+        # Show error in UI instead of crashing
+        error_text = ft.Column([
+            ft.Text("Zenith - Error", size=24, weight=ft.FontWeight.BOLD, color="red"),
+            ft.Text(f"Failed to initialize: {str(e)}", color="red"),
+            ft.Text("Check the console log for details.", size=12, italic=True),
+        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        page.add(error_text)
 
     page.update()
 
 
-ft.app(target=main, assets_dir="assets")
+try:
+    print("Starting Flet app...", flush=True)
+    ft.app(target=main, assets_dir="assets")
+except Exception as e:
+    print(f"Fatal error starting app: {e}", flush=True)
+    traceback.print_exc()
+    sys.exit(1)

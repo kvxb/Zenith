@@ -81,31 +81,16 @@ jobs:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: 1
 
-      - name: Prepare Linux Artifact
-        if: runner.os == 'Linux'
-        run: |
-          cd build/linux
-          tar -czf ../../Zenith-Linux-x64.tar.gz *
-        working-directory: ${{ github.workspace }}
-
-      - name: Prepare Windows Artifact
-        if: runner.os == 'Windows'
-        run: |
-          cd build/windows
-          Compress-Archive -Path * -DestinationPath ../../Zenith-Windows-x64.zip
-        working-directory: ${{ github.workspace }}
-        shell: pwsh
-
       - name: Upload Linux Artifact
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: Zenith-Linux-x64
-          path: Zenith-Linux-x64.tar.gz
+          path: build/linux/
 
       - name: Upload Windows Artifact
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: Zenith-Windows-x64
-          path: Zenith-Windows-x64.zip
+          path: build/windows/
