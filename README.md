@@ -15,6 +15,17 @@ without subscription dependencies.
 -   Privacy-conscious individuals avoiding cloud streaming
 -   People who oppose the monthly subscription model
 
+### Quick Start (Development)
+Using a virtual environment (recommended)
+
+Linux / macOS
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+flet run src
+```
+
 ## System Overview
 
 ### Frontend
@@ -123,3 +134,15 @@ making the process as friendly as possible, the user is required to have
 a working Spotify account with playlists containing the songs they want
 to listen to, and we'll handle the rest using the APIs provided by
 Spotify and yt-dlp.
+
+## Tips on how to use
+- Press the plus button near top left for spotify import (due to the api limitations you will have to message us so we can manually whitelist)
+- Press the three dots near top right (below the skip button) and enter a name and artist that you wish to add to your playlist then wait for the download
+- In case you can't find them look at the .jpg provided
+
+## Known Issues
+- Fetching Spotify playlists can take significant time, during which the UI thread is blocked
+- Reordering of files not yet supported
+- Fine-grained download from Spotify not yet supported
+- Spotify Developer API restrictions
+- Windows build opens but you can't actually play anything (ffmpeg issue)
