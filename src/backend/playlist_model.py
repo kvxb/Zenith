@@ -2,7 +2,9 @@ from .track_model import TrackModel
 
 
 class PlaylistModel:
-    def __init__(self, playlist_id: str, name: str, tracks: list[TrackModel] = [], icon: str = ""):
+    def __init__(
+        self, playlist_id: str, name: str, tracks: list[TrackModel] = [], icon: str = ""
+    ):
         self.id = playlist_id
         self.name = name
         self.track_dict = {track.id: track for track in tracks}

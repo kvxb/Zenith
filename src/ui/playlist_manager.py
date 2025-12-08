@@ -86,7 +86,7 @@ class PlaylistManager:
             return
 
         self.state_manager.update_last_state(active_playlist, track)
-        self.play()
+        return self.play()
 
     def play_previous_track(self):
         """Play the previous track in the playlist"""
@@ -105,7 +105,7 @@ class PlaylistManager:
             return
 
         self.state_manager.update_last_state(active_playlist, track)
-        self.play()
+        return self.play()
 
     def on_play(self, playlist_id: str, track_id: str | None):
         """Handle play button or track click"""
@@ -157,8 +157,11 @@ class PlaylistManager:
                     self.play()
                     return
 
-            print("Track completed, moving to next track")
-            self.play_next_track()
+            new_track = self.play_next_track()
+            if new_track is None:
+                print("No next track to play after completion")
+                self.forget()
+                return
 
     def on_reorder(self, id: str, old_idx: int | None, new_idx: int | None):
         """Handle playlist reorder"""
@@ -378,6 +381,7 @@ class PlaylistManager:
             current_playlist,
             self.playback_controller.is_playing,
         )
+        return current_track
 
     def on_search(self, query: str):
         """Handle search queries"""
@@ -385,17 +389,31 @@ class PlaylistManager:
 
     def forget(self):
         """Clear playback state and hide now playing UI"""
+        active_playlist = self.state_manager.get_active_playlist()
+
         if self.playback_controller.is_playing:
             self.pause(update_ui=False)
 
         self.state_manager.update_last_state(None, None)
         self.tab_area.now_playing.toggle_show_hide(False)
 
-        # Unhighlight all playlist cards
+        # Unhighlight all playlist cards and track items
         for playlist in self.state_manager.playlists:
             card_ui = self.tab_area.get_playslist_card(playlist.id)
             if card_ui is not None:
                 card_ui.highlight(False)
+
+            # Unhighlight all track items in this playlist
+            playlist_ui = self.tab_area.get_playlist(playlist.id)
+            if playlist_ui is not None:
+                for track in playlist.tracks():
+                    track_item = playlist_ui.get_track_item(track.id)
+                    if track_item is not None:
+                        track_item.highlight(False)
+
+        # Update UI to reflect stopped state
+        if active_playlist is not None:
+            self.tab_area.update_ui_on_play(None, None, active_playlist, False)
 
     def remove_playlist(self, playlist_id: str):
         """Remove a playlist from the manager"""

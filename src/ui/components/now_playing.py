@@ -125,15 +125,23 @@ class NowPlaying(ft.Container):
         return f"{minutes}:{seconds:02d}"
 
     def _on_change(self, e: ft.ControlEvent):
-        self.update_playback_position(int(e.control.value))
-        self.is_dragging_slider = False
-        self.on_slider_end(int(e.control.value))
+        # Only update the display time during drag, don't seek yet
+        if self.current_track is None:
+            return
+
+        current_value = int(e.control.value)
+        self.current_time_text.value = self._format_time(current_value)
+        try:
+            self.current_time_text.update()
+        except:
+            pass
 
     def _slider_scrub_end(self, e: ft.ControlEvent):
         value = int(e.control.value)
 
         self.is_dragging_slider = False
-        self.update_playback_position(value)
+        # Only seek when the user releases the slider
+        self.on_slider_end(value)
 
     def _on_slider_start(self, e: ft.ControlEvent):
         self.is_dragging_slider = True
