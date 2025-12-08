@@ -43,7 +43,7 @@ def main(page: ft.Page):
         print("PlaylistManager created", flush=True)
         playlist_manager.add_to_page(page)
         print("UI added to page", flush=True)
-        
+
         def on_event(e: ft.WindowEvent, page: ft.Page):
             if e.type == ft.WindowEventType.CLOSE:
                 print("Application is closing.")
@@ -56,16 +56,22 @@ def main(page: ft.Page):
 
         page.window.prevent_close = True
         page.window.on_event = lambda e: on_event(e, page)
-        
+
     except Exception as e:
         print(f"Error in main(): {e}", flush=True)
         traceback.print_exc()
         # Show error in UI instead of crashing
-        error_text = ft.Column([
-            ft.Text("Zenith - Error", size=24, weight=ft.FontWeight.BOLD, color="red"),
-            ft.Text(f"Failed to initialize: {str(e)}", color="red"),
-            ft.Text("Check the console log for details.", size=12, italic=True),
-        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        error_text = ft.Column(
+            [
+                ft.Text(
+                    "Zenith - Error", size=24, weight=ft.FontWeight.BOLD, color="red"
+                ),
+                ft.Text(f"Failed to initialize: {str(e)}", color="red"),
+                ft.Text("Check the console log for details.", size=12, italic=True),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
         page.add(error_text)
 
     page.update()
