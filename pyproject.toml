@@ -1,7 +1,7 @@
 [project]
-name = "flet-app"
+name = "zenith-music-player"
 version = "0.1.0"
-description = ""
+description = "A modern music player built with Flet"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
@@ -17,17 +17,17 @@ dependencies = [
 [tool.flet]
 # org name in reverse domain name notation, e.g. "com.mycompany".
 # Combined with project.name to build bundle ID for iOS and Android apps
-org = "com.mycompany"
+org = "com.zenith"
 
 # project display name that is used as an app title on Android and iOS home screens,
 # shown in window titles and about app dialogs on desktop.
-product = "flet-app"
+product = "Zenith Music Player"
 
 # company name to display in about app dialogs
-company = "Flet"
+company = "Zenith"
 
 # copyright text to display in about app dialogs
-copyright = "Copyright (C) 2025 by Flet"
+copyright = "Copyright (C) 2025 by Zenith"
 
 [tool.flet.app]
 path = "src"
