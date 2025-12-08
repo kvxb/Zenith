@@ -2,23 +2,52 @@ import warnings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-import flet as ft
-import uuid
-from flet_audio import Audio
-from ui import PlaylistManager
-from backend import TrackModel, PlaylistModel
-from backend.music_manager import MusicManager
+import sys
+import traceback
+import os
+
+print("Starting Zenith app...", flush=True)
+print(f"FLET_PLATFORM: {os.environ.get('FLET_PLATFORM', 'not set')}", flush=True)
+sys.stdout.flush()
+
+try:
+    import flet as ft
+
+    print("Flet imported successfully", flush=True)
+    import uuid
+    from flet_audio import Audio
+
+    print("flet_audio imported successfully", flush=True)
+    from ui import PlaylistManager
+
+    print("PlaylistManager imported successfully", flush=True)
+    from backend import TrackModel, PlaylistModel
+    from backend.music_manager import MusicManager
+
+    print("Backend modules imported successfully", flush=True)
+except Exception as e:
+    print(f"Import error: {e}", flush=True)
+    traceback.print_exc()
+    sys.exit(1)
 
 
 def main(page: ft.Page):
     page.title = "Zenith"
-
     page.theme_mode = ft.ThemeMode.DARK
     # page.theme = ft.Theme(color_scheme_seed=ft.Colors.CYAN_100)
 
-    music_manager = MusicManager()
-    playlist_manager = PlaylistManager(music_manager)
-    playlist_manager.add_to_page(page)
+    try:
+        music_manager = MusicManager()
+        print("MusicManager created", flush=True)
+        playlist_manager = PlaylistManager(music_manager)
+        print("PlaylistManager created", flush=True)
+        playlist_manager.add_to_page(page)
+        print("UI added to page", flush=True)
+    except Exception as e:
+        print(f"Error in main(): {e}", flush=True)
+        traceback.print_exc()
+        page.add(ft.Text(f"Error: {e}", color="red"))
+        page.update()
 
     def on_event(e: ft.WindowEvent, page: ft.Page):
         if e.type == ft.WindowEventType.CLOSE:
@@ -33,5 +62,4 @@ def main(page: ft.Page):
     page.update()
 
 
-if __name__ == "__main__":
-    ft.app(main, assets_dir="assets", port=8550)
+ft.app(target=main, assets_dir="assets")

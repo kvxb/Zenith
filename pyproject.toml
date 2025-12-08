@@ -9,7 +9,9 @@ authors = [
 ]
 dependencies = [
   "flet==0.28.3",
-  "flet-audio==0.1.0"
+  "flet-audio==0.1.0",
+  "spotipy",
+  "yt-dlp"
 ]
 
 [tool.flet]
@@ -29,6 +31,8 @@ copyright = "Copyright (C) 2025 by Flet"
 
 [tool.flet.app]
 path = "src"
+module = "main"
+icon = "assets/icon.png"
 
 [tool.uv]
 dev-dependencies = [
