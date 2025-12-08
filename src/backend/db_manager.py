@@ -226,6 +226,7 @@ class SimpleMusicDB:
         conn = self._get_connection()
         cursor = conn.cursor()
 
+        # Check if track exists in tracks table
         cursor.execute(
             "SELECT id FROM tracks WHERE title = ? AND artist = ? AND album = ?",
             (title, artist, album)
@@ -234,25 +235,36 @@ class SimpleMusicDB:
 
         if existing_track:
             track_id = existing_track[0]
+            # Check if track is already in THIS specific playlist
             cursor.execute(
                 "SELECT 1 FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
                 (playlist_id, track_id),
             )
             if cursor.fetchone():
-                print(f"Track '{title}' by '{artist}' is already in playlist")
+                print(f"Track '{title}' by '{artist}' is already in playlist {playlist_id}")
                 return track_id
+            
+            # Track exists in database but NOT in this playlist
+            # Increment reference count since we're adding it to another playlist
+            cursor.execute(
+                "UPDATE tracks SET reference_count = reference_count + 1 WHERE id = ?",
+                (track_id,)
+            )
+            print(f"Track '{title}' exists, added to another playlist (ref count++)")
         else:
+            # Track doesn't exist in database at all, create new with ref count = 1
             cursor.execute(
                 "INSERT INTO tracks (title, artist, album, duration, icon, reference_count) VALUES (?, ?, ?, ?, ?, ?)",
                 (title, artist, album, duration, icon, 1),
             )
             track_id = cursor.lastrowid
+            print(f"Created new track '{title}' (ref count = 1)")
 
-        # Get current song count BEFORE updating
+        # Get current song count BEFORE updating (for position)
         cursor.execute("SELECT song_count FROM playlists WHERE id = ?", (playlist_id,))
         current_count = cursor.fetchone()[0]
 
-        # Insert with position (adds at end)
+        # Insert track into playlist at the end
         cursor.execute(
             "INSERT INTO playlist_tracks (playlist_id, track_id, position) VALUES (?, ?, ?)",
             (playlist_id, track_id, current_count + 1),
