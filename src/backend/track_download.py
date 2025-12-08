@@ -7,7 +7,7 @@ from threading import Lock
 
 
 class SimpleDownloader:
-    def __init__(self, db: SimpleMusicDB, download_dir: str = "./src/assets", max_workers: int = 4):
+    def __init__(self, db: SimpleMusicDB, download_dir: str = "./src/assets/tracks", max_workers: int = 4):
         """
         Multi-threaded YouTube downloader.
         
@@ -74,7 +74,7 @@ class SimpleDownloader:
         file_path = self._search_and_download(title, artist)
         
         if file_path:
-            file_name = Path(file_path).name
+            file_name = "tracks/" + Path(file_path).name
             
             # Get duration from the downloaded file
             duration = self._get_duration_from_file(file_path)
