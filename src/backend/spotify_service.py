@@ -4,6 +4,7 @@ from spotipy.oauth2 import SpotifyPKCE
 from . import config
 from .db_manager import SimpleMusicDB
 import threading
+from typing import Optional, List, Dict, Any
 
 
 class SpotifyService:
@@ -13,23 +14,27 @@ class SpotifyService:
 
     SCOPE = "playlist-read-private playlist-read-collaborative user-library-read"
 
-    def __init__(self, client_id: str, redirect_uri: str, db: SimpleMusicDB):
+    def __init__(self, client_id: str, redirect_uri: str, db: SimpleMusicDB, cache_dir: Optional[str] = None):
         self.client_id = client_id
         self.redirect_uri = redirect_uri
         self.db = db
         self._spotify_client = None
-
+        self.cache_dir = cache_dir  # Add this
+    
     def authenticate(self) -> spotipy.Spotify:
-        """
-        Performs PKCE OAuth flow - opens browser for user login.
-        """
         try:
+            # Determine cache path
+            if self.cache_dir:
+                cache_path = os.path.join(self.cache_dir, ".spotify_pkce_cache")
+            else:
+                cache_path = ".spotify_pkce_cache"
+            
             self._spotify_client = spotipy.Spotify(
                 auth_manager=SpotifyPKCE(
                     client_id=self.client_id,
                     redirect_uri=self.redirect_uri,
                     scope=self.SCOPE,
-                    cache_path=".spotify_pkce_cache",
+                    cache_path=cache_path,  # Changed here
                 )
             )
 

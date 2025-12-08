@@ -59,6 +59,7 @@ class MusicManager:
         self.db_path = self.storage_root / "playlists_songs.db"
         self.icons_dir = self.storage_root / "icons"
         self.tracks_dir = self.storage_root / "tracks"
+        self.cache_dir = self.storage_root / "cache"
 
         print(f"📁 Storage root: {self.storage_root}")
         print(f"🗃️  Database: {self.db_path}")
@@ -68,7 +69,7 @@ class MusicManager:
         # Initialize components with proper paths
         self.db = SimpleMusicDB(str(self.db_path))
         self.spotify_service = SpotifyService(
-            client_id=config.CLIENT_ID, redirect_uri=config.REDIRECT_URI, db=self.db
+            client_id=config.CLIENT_ID, redirect_uri=config.REDIRECT_URI, db=self.db, cache_dir=str(self.cache_dir)
         )
         self.downloader = SimpleDownloader(self.db, str(self.tracks_dir))
         self.icon_downloader = IconDownloader(db=self.db, icons_dir=str(self.icons_dir))
@@ -81,6 +82,7 @@ class MusicManager:
         # Create subdirectories
         (self.storage_root / "icons").mkdir(exist_ok=True)
         (self.storage_root / "tracks").mkdir(exist_ok=True)
+        (self.storage_root / "cache").mkdir(exist_ok=True)
 
     def get_storage_info(self) -> Dict[str, str]:
         """Get information about storage locations."""
