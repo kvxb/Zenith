@@ -2,13 +2,13 @@ from .track_model import TrackModel
 
 
 class PlaylistModel:
-    def __init__(self, playlist_id: str, name: str, tracks: list[TrackModel] = []):
+    def __init__(self, playlist_id: str, name: str, tracks: list[TrackModel] = [], icon: str = ""):
         self.id = playlist_id
         self.name = name
         self.track_dict = {track.id: track for track in tracks}
         self.track_order_list = [track.id for track in tracks]
         self.current_track_id = None
-
+        self.icon = icon
         self.is_looping = False
 
     def has_track(self, track_id: str) -> bool:

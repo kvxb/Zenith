@@ -173,7 +173,7 @@ class MusicManager:
                     artist=track_info.artist,
                     album=track_info.album,
                     duration=track_info.duration,
-                    icon=track_info.file_path if file_downloaded else icon,
+                    icon=track_info.image_path if file_downloaded else icon,
                 )
 
                 print(f"✓ Copied track '{track_info.title}' to playlist")
@@ -219,143 +219,130 @@ class MusicManager:
             return ""
 
     def get_track_by_id(self, track_id: str) -> TrackModel | None:
-        """Get detailed info for a single track."""
         try:
             track_id_int = int(track_id)
             conn = self.db._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute(
-                """
-                SELECT id, title, artist, album, duration, path_mp3, icon
+            # Don't join with playlist_tracks for single track
+            cursor.execute("""
+                SELECT id, title, artist, album, duration, 
+                       path_mp3, icon
                 FROM tracks WHERE id = ?
-            """,
-                (track_id_int,),
-            )
+            """, (track_id_int,))
 
             track = cursor.fetchone()
             if not track:
                 return None
 
-            # return {
-            #     "track_id": str(track[0]),
-            #     "title": track[1],
-            #     "artist": track[2],
-            #     "album": track[3],
-            #     "duration": track[4],
-            #     "file_path": track[5] or "",
-            #     "icon": track[6] or ""
-            # }
             return TrackModel(
                 track_id=str(track[0]),
                 title=track[1],
                 artist=track[2],
                 album=track[3] or "",
-                duration=track[4],
+                duration=track[4] or 0,
                 file_path=track[5] or "",
                 image_path=track[6] or "",
+                position=0,  # Position doesn't make sense without playlist context
             )
-        except ValueError:
-            print(f"Invalid track ID: {track_id}")
-            return None
         except Exception as e:
             print(f"Error getting track: {e}")
             return None
 
     def get_playlist_by_id(self, playlist_id: str) -> Optional[PlaylistModel]:
-        """Get a single playlist with all its tracks."""
         try:
             playlist_id_int = int(playlist_id)
             conn = self.db._get_connection()
             cursor = conn.cursor()
 
-            # Get playlist info
+            # Get playlist info WITH icon
             cursor.execute(
-                "SELECT id, name FROM playlists WHERE id = ?", (playlist_id_int,)
+                "SELECT id, name, icon FROM playlists WHERE id = ?",  # ADDED icon
+                (playlist_id_int,)
             )
             playlist = cursor.fetchone()
             if not playlist:
                 return None
 
-            playlist_id_db, playlist_name = playlist
+            playlist_id_db, playlist_name, playlist_icon = playlist  # ADDED icon
 
-            # Get tracks for this playlist
-            cursor.execute(
-                """
-                SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3, pt.position
+            # Get tracks - ADD icon field
+            cursor.execute("""
+                SELECT t.id, t.title, t.artist, t.album, t.duration, 
+                       t.path_mp3, t.icon, pt.position  # ADDED t.icon
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
                 ORDER BY pt.position
-            """,
-                (playlist_id_int,),
-            )
+            """, (playlist_id_int,))
 
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3, position in tracks:
+            for track_id, title, artist, album, duration, path_mp3, icon, position in tracks:  # ADDED icon
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
                     artist=artist,
                     album=album or "",
-                    duration=duration,
+                    duration=duration or 0,
                     file_path=path_mp3 or "",
-                    position = position
+                    image_path=icon or "",  # Map DB 'icon' to model 'image_path'
+                    position=position,
                 )
                 track_models.append(track_model)
 
             return PlaylistModel(
-                playlist_id=str(playlist_id_db), name=playlist_name, tracks=track_models
+                playlist_id=str(playlist_id_db), 
+                name=playlist_name, 
+                tracks=track_models,
+                icon=playlist_icon or ""  # ADD playlist icon
             )
-
-        except ValueError:
-            print(f"Invalid playlist ID: {playlist_id}")
-            return None
         except Exception as e:
             print(f"Error getting playlist: {e}")
             return None
 
     def _get_all_playlists(self) -> List[PlaylistModel]:
-        """Convert database playlists and tracks to model objects."""
         conn = self.db._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT id, name FROM playlists")
+        # Get playlist WITH icon
+        cursor.execute("SELECT id, name, icon FROM playlists")  # ADDED icon
         playlists = cursor.fetchall()
 
         playlist_models: List[PlaylistModel] = []
 
-        for playlist_id, playlist_name in playlists:
-            cursor.execute(
-                """
-                SELECT t.id, t.title, t.artist, t.album, t.duration, t.path_mp3, pt.position
+        for playlist_id, playlist_name, playlist_icon in playlists:  # ADDED icon
+            cursor.execute("""
+                SELECT t.id, t.title, t.artist, t.album, t.duration, 
+                       t.path_mp3, t.icon, pt.position
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
                 ORDER BY pt.position
-            """,
-                (playlist_id,),
-            )
+            """, (playlist_id,))
 
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3, position in tracks:
+            for track_id, title, artist, album, duration, path_mp3, icon, position in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
                     artist=artist,
                     album=album or "",
-                    duration=duration,
+                    duration=duration or 0,
                     file_path=path_mp3 or "",
-                    position = position
+                    image_path=icon or "",
+                    position=position,
                 )
                 track_models.append(track_model)
 
             playlist_model = PlaylistModel(
-                playlist_id=str(playlist_id), name=playlist_name, tracks=track_models
+                playlist_id=str(playlist_id), 
+                name=playlist_name, 
+                tracks=track_models,
+                icon=playlist_icon or ""  # ADD playlist icon
             )
             playlist_models.append(playlist_model)
 
