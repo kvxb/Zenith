@@ -55,7 +55,7 @@ class PlaylistTabArea(ft.Container):
         return ft.Column(
             controls=[
                 self._library_label(),
-                self._playlist_search_bar(),
+                # self._playlist_search_bar(),
             ]
         )
 
