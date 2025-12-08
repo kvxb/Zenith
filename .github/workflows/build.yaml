@@ -1,10 +1,6 @@
 name: Cross-Platform Flet Build
 
 on:
-  push:
-    branches:
-      - build
-      - main
   workflow_dispatch: # Allows manual triggering from the GitHub UI
 
 jobs:
