@@ -22,3 +22,4 @@ src/assets/*
 
 /build/*
 /dist/*
+/storage/*

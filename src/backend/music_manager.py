@@ -38,7 +38,7 @@ class MusicManager:
     def __init__(self, storage_root: Optional[str] = None):
         """
         Initialize MusicManager with storage root.
-        
+
         Args:
             storage_root: Base directory for all data storage.
                          If None, uses FLET_APP_STORAGE_DATA or current directory.
@@ -51,42 +51,37 @@ class MusicManager:
         else:
             # Fallback to current directory (legacy behavior)
             self.storage_root = Path.cwd()
-        
+
         # Create directory structure
         self._create_directory_structure()
-        
+
         # Define paths
         self.db_path = self.storage_root / "playlists_songs.db"
         self.icons_dir = self.storage_root / "icons"
         self.tracks_dir = self.storage_root / "tracks"
-        
+
         print(f"📁 Storage root: {self.storage_root}")
         print(f"🗃️  Database: {self.db_path}")
         print(f"🖼️  Icons dir: {self.icons_dir}")
         print(f"🎵 Tracks dir: {self.tracks_dir}")
-        
+
         # Initialize components with proper paths
         self.db = SimpleMusicDB(str(self.db_path))
         self.spotify_service = SpotifyService(
-            client_id=config.CLIENT_ID, 
-            redirect_uri=config.REDIRECT_URI, 
-            db=self.db
+            client_id=config.CLIENT_ID, redirect_uri=config.REDIRECT_URI, db=self.db
         )
         self.downloader = SimpleDownloader(self.db, str(self.tracks_dir))
-        self.icon_downloader = IconDownloader(
-            db=self.db,
-            icons_dir=str(self.icons_dir)
-        )
-        
+        self.icon_downloader = IconDownloader(db=self.db, icons_dir=str(self.icons_dir))
+
     def _create_directory_structure(self):
         """Create necessary directories in storage root."""
         # Create base directory if it doesn't exist
         self.storage_root.mkdir(parents=True, exist_ok=True)
-        
+
         # Create subdirectories
         (self.storage_root / "icons").mkdir(exist_ok=True)
         (self.storage_root / "tracks").mkdir(exist_ok=True)
-        
+
     def get_storage_info(self) -> Dict[str, str]:
         """Get information about storage locations."""
         return {
@@ -94,7 +89,7 @@ class MusicManager:
             "database": str(self.db_path),
             "icons_dir": str(self.icons_dir),
             "tracks_dir": str(self.tracks_dir),
-            "exists": str(self.storage_root.exists())
+            "exists": str(self.storage_root.exists()),
         }
 
     def import_from_spotify(self) -> List[PlaylistModel]:
@@ -215,7 +210,8 @@ class MusicManager:
                     artist=track_info.artist,
                     album=track_info.album,
                     duration=track_info.duration,
-                    icon=track_info.image_path or icon,  # Use existing image or provided
+                    icon=track_info.image_path
+                    or icon,  # Use existing image or provided
                 )
 
                 print(f"✓ Copied track '{track_info.title}' to playlist")
@@ -266,11 +262,14 @@ class MusicManager:
             conn = self.db._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT id, title, artist, album, duration, 
                        path_mp3, icon
                 FROM tracks WHERE id = ?
-            """, (track_id_int,))
+            """,
+                (track_id_int,),
+            )
 
             track = cursor.fetchone()
             if not track:
@@ -301,8 +300,7 @@ class MusicManager:
 
             # Get playlist info WITH icon
             cursor.execute(
-                "SELECT id, name, icon FROM playlists WHERE id = ?",
-                (playlist_id_int,)
+                "SELECT id, name, icon FROM playlists WHERE id = ?", (playlist_id_int,)
             )
             playlist = cursor.fetchone()
             if not playlist:
@@ -312,19 +310,31 @@ class MusicManager:
             playlist_id_db, playlist_name, playlist_icon = playlist
 
             # Get tracks with icon field
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT t.id, t.title, t.artist, t.album, t.duration, 
                        t.path_mp3, t.icon, pt.position
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
                 ORDER BY pt.position
-            """, (playlist_id_int,))
+            """,
+                (playlist_id_int,),
+            )
 
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3, icon, position in tracks:
+            for (
+                track_id,
+                title,
+                artist,
+                album,
+                duration,
+                path_mp3,
+                icon,
+                position,
+            ) in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
@@ -341,10 +351,10 @@ class MusicManager:
             conn.close()
 
             return PlaylistModel(
-                playlist_id=str(playlist_id_db), 
-                name=playlist_name, 
+                playlist_id=str(playlist_id_db),
+                name=playlist_name,
                 tracks=track_models,
-                icon=playlist_icon or ""
+                icon=playlist_icon or "",
             )
         except Exception as e:
             print(f"Error getting playlist: {e}")
@@ -361,19 +371,31 @@ class MusicManager:
         playlist_models: List[PlaylistModel] = []
 
         for playlist_id, playlist_name, playlist_icon in playlists:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT t.id, t.title, t.artist, t.album, t.duration, 
                        t.path_mp3, t.icon, pt.position
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
                 ORDER BY pt.position
-            """, (playlist_id,))
+            """,
+                (playlist_id,),
+            )
 
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3, icon, position in tracks:
+            for (
+                track_id,
+                title,
+                artist,
+                album,
+                duration,
+                path_mp3,
+                icon,
+                position,
+            ) in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
@@ -387,10 +409,10 @@ class MusicManager:
                 track_models.append(track_model)
 
             playlist_model = PlaylistModel(
-                playlist_id=str(playlist_id), 
-                name=playlist_name, 
+                playlist_id=str(playlist_id),
+                name=playlist_name,
                 tracks=track_models,
-                icon=playlist_icon or ""
+                icon=playlist_icon or "",
             )
             playlist_models.append(playlist_model)
 
@@ -426,7 +448,7 @@ class MusicManager:
 
         result = cursor.fetchone()
         conn.close()
-        
+
         return str(result[0]) if result else None
 
     def get_playlist_id(self, name: str) -> Optional[str]:
