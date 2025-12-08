@@ -1,12 +1,14 @@
 import spotipy
+import os
 from spotipy.oauth2 import SpotifyPKCE
 from . import config
 from .db_manager import SimpleMusicDB
+import threading
 
 
 class SpotifyService:
     """
-    Handles Spotify authentication and data import.
+    Handles Spotify authentication and data import using SimpleMusicDB.
     """
 
     SCOPE = "playlist-read-private playlist-read-collaborative user-library-read"
@@ -63,7 +65,6 @@ class SpotifyService:
             Dictionary with import statistics
         """
         client = self.get_client()
-        user_id = self.get_current_user()["id"]
 
         print("📥 Fetching playlists from Spotify...")
 
@@ -127,7 +128,7 @@ class SpotifyService:
                 else None
             )
 
-        # Add playlist to database
+        # Add playlist to database using SimpleMusicDB
         db_playlist_id = self.db.add_playlist(name=playlist_name, icon=icon_url)
 
         print(f"   Created database playlist ID: {db_playlist_id}")
@@ -159,7 +160,6 @@ class SpotifyService:
         except Exception as e:
             print(f"   ❌ Error fetching tracks: {e}")
             import traceback
-
             traceback.print_exc()
             return {"tracks_imported": 0, "errors": 1}
 
@@ -173,9 +173,7 @@ class SpotifyService:
                 title = track["name"]
                 artists = ", ".join([artist["name"] for artist in track["artists"]])
                 duration = track["duration_ms"] // 1000
-                album = (
-                    track.get("album", {}).get("name", "") if track.get("album") else ""
-                )  # ADD THIS
+                album = track.get("album", {}).get("name", "") if track.get("album") else ""
 
                 # Get album cover
                 icon_url = None
@@ -186,12 +184,12 @@ class SpotifyService:
                         else None
                     )
 
-                # Add to database WITH ALBUM
-                self.db.add_track_to_playlist(
+                # Add to database using SimpleMusicDB
+                track_id = self.db.add_track_to_playlist(
                     playlist_id=db_playlist_id,
                     title=title,
                     artist=artists,
-                    album=album,  # ADD THIS
+                    album=album,
                     duration=duration,
                     icon=icon_url,
                 )
@@ -211,72 +209,34 @@ class SpotifyService:
         print(f"   ✅ Imported {stats['tracks_imported']} tracks")
         return stats
 
-    # In spotify_service.py, update the _import_track method:
-
-    def _import_track(self, track: dict, db_playlist_id: int) -> int:
-        """
-        Import a single track to database.
-        """
-        # Extract track info
-        title = track["name"]
-        artists = ", ".join([artist["name"] for artist in track["artists"]])
-        duration = track["duration_ms"] // 1000
-        # NEW: Get album name
-        album = track.get("album", {}).get("name", "") if track.get("album") else ""
-
-        # Get album cover
-        icon_url = None
-        if track.get("album") and track["album"].get("images"):
-            icon_url = (
-                track["album"]["images"][0]["url"]
-                if track["album"]["images"][0]["url"]
-                else None
-            )
-
-        # Update call to include album
-        track_id = self.db.add_track_to_playlist(
-            playlist_id=db_playlist_id,
-            title=title,
-            artist=artists,
-            album=album,  # NEW
-            duration=duration,
-            icon=icon_url,
-        )
-
-        return track_id
-
     def _update_playlist_stats(self, db_playlist_id: int):
         """
         Update song count and total duration for a playlist.
         """
-        cursor = self.db._get_connection().cursor()
-
-        # Get total tracks and duration for this playlist
-        cursor.execute(
+        # Use SimpleMusicDB's execute_query method
+        results = self.db.execute_query(
             """
             SELECT COUNT(pt.track_id), SUM(t.duration)
             FROM playlist_tracks pt
             JOIN tracks t ON pt.track_id = t.id
             WHERE pt.playlist_id = ?
-        """,
-            (db_playlist_id,),
+            """,
+            (db_playlist_id,)
         )
 
-        result = cursor.fetchone()
-        song_count = result[0] or 0
-        total_duration = result[1] or 0
-
-        # Update playlist
-        cursor.execute(
-            """
-            UPDATE playlists 
-            SET song_count = ?, total_duration = ?
-            WHERE id = ?
-        """,
-            (song_count, total_duration, db_playlist_id),
-        )
-
-        self.db._get_connection().commit()
+        if results and results[0]:
+            song_count = results[0][0] or 0
+            total_duration = results[0][1] or 0
+            
+            # Update using SimpleMusicDB
+            self.db.execute_update(
+                """
+                UPDATE playlists 
+                SET song_count = ?, total_duration = ?
+                WHERE id = ?
+                """,
+                (song_count, total_duration, db_playlist_id)
+            )
 
     def import_saved_tracks(self) -> dict:
         """
@@ -289,7 +249,7 @@ class SpotifyService:
 
         print("📥 Fetching saved tracks from Spotify...")
 
-        # Create a playlist for saved tracks
+        # Create a playlist for saved tracks using SimpleMusicDB
         db_playlist_id = self.db.add_playlist(name="Liked Songs", icon=None)
 
         # Get all saved tracks
@@ -313,7 +273,31 @@ class SpotifyService:
         # Import each track
         for i, track in enumerate(tracks, 1):
             try:
-                self._import_track(track, db_playlist_id)
+                # Extract track info
+                title = track["name"]
+                artists = ", ".join([artist["name"] for artist in track["artists"]])
+                duration = track["duration_ms"] // 1000
+                album = track.get("album", {}).get("name", "") if track.get("album") else ""
+
+                # Get album cover
+                icon_url = None
+                if track.get("album") and track["album"].get("images"):
+                    icon_url = (
+                        track["album"]["images"][0]["url"]
+                        if track["album"]["images"][0]["url"]
+                        else None
+                    )
+
+                # Add to database using SimpleMusicDB
+                self.db.add_track_to_playlist(
+                    playlist_id=db_playlist_id,
+                    title=title,
+                    artist=artists,
+                    album=album,
+                    duration=duration,
+                    icon=icon_url,
+                )
+
                 stats["tracks_imported"] += 1
 
                 if i % 10 == 0:
@@ -329,3 +313,15 @@ class SpotifyService:
         print(f"✅ Imported {stats['tracks_imported']} saved tracks")
         return stats
 
+    def get_playlist_tracks_count(self, playlist_id: str) -> int:
+        """
+        Get the number of tracks in a Spotify playlist.
+        """
+        try:
+            playlist = self.get_client().playlist(
+                playlist_id, fields="tracks.total"
+            )
+            return playlist.get("tracks", {}).get("total", 0)
+        except Exception as e:
+            print(f"Error getting playlist track count: {e}")
+            return 0

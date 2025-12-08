@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from .db_manager import SimpleMusicDB
@@ -26,8 +28,6 @@ Public API for frontend:
 - get_all_playlist_ids()        Get all playlist names and IDs
 - set_library_name()            Set library name
 - get_library_name()            Get library name
-- set_metadata()                Set any metadata
-- get_metadata()                Get any metadata
 - reorder_tracks()              Reorder tracks in a playlist
 """
 
@@ -35,13 +35,67 @@ Public API for frontend:
 class MusicManager:
     """Main interface for Spotify import, YouTube download, and playlist management."""
 
-    def __init__(self, db_path: str = "playlists_songs.db"):
-        self.db = SimpleMusicDB()
+    def __init__(self, storage_root: Optional[str] = None):
+        """
+        Initialize MusicManager with storage root.
+        
+        Args:
+            storage_root: Base directory for all data storage.
+                         If None, uses FLET_APP_STORAGE_DATA or current directory.
+        """
+        # Determine storage root
+        if storage_root:
+            self.storage_root = Path(storage_root)
+        elif os.getenv("FLET_APP_STORAGE_DATA"):
+            self.storage_root = Path(os.getenv("FLET_APP_STORAGE_DATA"))
+        else:
+            # Fallback to current directory (legacy behavior)
+            self.storage_root = Path.cwd()
+        
+        # Create directory structure
+        self._create_directory_structure()
+        
+        # Define paths
+        self.db_path = self.storage_root / "playlists_songs.db"
+        self.icons_dir = self.storage_root / "icons"
+        self.tracks_dir = self.storage_root / "tracks"
+        
+        print(f"📁 Storage root: {self.storage_root}")
+        print(f"🗃️  Database: {self.db_path}")
+        print(f"🖼️  Icons dir: {self.icons_dir}")
+        print(f"🎵 Tracks dir: {self.tracks_dir}")
+        
+        # Initialize components with proper paths
+        self.db = SimpleMusicDB(str(self.db_path))
         self.spotify_service = SpotifyService(
-            client_id=config.CLIENT_ID, redirect_uri=config.REDIRECT_URI, db=self.db
+            client_id=config.CLIENT_ID, 
+            redirect_uri=config.REDIRECT_URI, 
+            db=self.db
         )
-        self.downloader = SimpleDownloader(self.db)
-        self.icon_downloader = IconDownloader(db_path)
+        self.downloader = SimpleDownloader(self.db, str(self.tracks_dir))
+        self.icon_downloader = IconDownloader(
+            db=self.db,
+            icons_dir=str(self.icons_dir)
+        )
+        
+    def _create_directory_structure(self):
+        """Create necessary directories in storage root."""
+        # Create base directory if it doesn't exist
+        self.storage_root.mkdir(parents=True, exist_ok=True)
+        
+        # Create subdirectories
+        (self.storage_root / "icons").mkdir(exist_ok=True)
+        (self.storage_root / "tracks").mkdir(exist_ok=True)
+        
+    def get_storage_info(self) -> Dict[str, str]:
+        """Get information about storage locations."""
+        return {
+            "storage_root": str(self.storage_root),
+            "database": str(self.db_path),
+            "icons_dir": str(self.icons_dir),
+            "tracks_dir": str(self.tracks_dir),
+            "exists": str(self.storage_root.exists())
+        }
 
     def import_from_spotify(self) -> List[PlaylistModel]:
         """Authenticate and import playlists from Spotify."""
@@ -63,15 +117,6 @@ class MusicManager:
     def get_library_name(self) -> str:
         """Get the library name from metadata."""
         return self.db.get_metadata("LIBRARY_NAME", "My Library")
-
-    # should not be available to frontend write speicifc methods for when new fields are added
-    # def set_metadata(self, key: str, value: str) -> bool:
-    #     """Set any metadata key-value pair."""
-    #     return self.db.set_metadata(key, value)
-    #
-    # def get_metadata(self, key: str, default: str = "") -> str:
-    #     """Get any metadata value by key."""
-    #     return self.db.get_metadata(key, default)
 
     def download_all_icons(self) -> Dict[str, int]:
         """Download all Spotify icons locally."""
@@ -164,16 +209,13 @@ class MusicManager:
                 if not track_info:
                     return ""
 
-                # Check if file is already downloaded
-                file_downloaded = bool(track_info.file_path)
-
                 new_track_id = self.db.add_track_to_playlist(
                     playlist_id=playlist_id_int,
                     title=track_info.title,
                     artist=track_info.artist,
                     album=track_info.album,
                     duration=track_info.duration,
-                    icon=track_info.image_path if file_downloaded else icon,
+                    icon=track_info.image_path or icon,  # Use existing image or provided
                 )
 
                 print(f"✓ Copied track '{track_info.title}' to playlist")
@@ -224,7 +266,6 @@ class MusicManager:
             conn = self.db._get_connection()
             cursor = conn.cursor()
 
-            # Don't join with playlist_tracks for single track
             cursor.execute("""
                 SELECT id, title, artist, album, duration, 
                        path_mp3, icon
@@ -234,6 +275,9 @@ class MusicManager:
             track = cursor.fetchone()
             if not track:
                 return None
+
+            # Close connection
+            conn.close()
 
             return TrackModel(
                 track_id=str(track[0]),
@@ -257,19 +301,20 @@ class MusicManager:
 
             # Get playlist info WITH icon
             cursor.execute(
-                "SELECT id, name, icon FROM playlists WHERE id = ?",  # ADDED icon
+                "SELECT id, name, icon FROM playlists WHERE id = ?",
                 (playlist_id_int,)
             )
             playlist = cursor.fetchone()
             if not playlist:
+                conn.close()
                 return None
 
-            playlist_id_db, playlist_name, playlist_icon = playlist  # ADDED icon
+            playlist_id_db, playlist_name, playlist_icon = playlist
 
-            # Get tracks - ADD icon field
+            # Get tracks with icon field
             cursor.execute("""
                 SELECT t.id, t.title, t.artist, t.album, t.duration, 
-                       t.path_mp3, t.icon, pt.position  # ADDED t.icon
+                       t.path_mp3, t.icon, pt.position
                 FROM tracks t
                 JOIN playlist_tracks pt ON t.id = pt.track_id
                 WHERE pt.playlist_id = ?
@@ -279,7 +324,7 @@ class MusicManager:
             tracks = cursor.fetchall()
             track_models: List[TrackModel] = []
 
-            for track_id, title, artist, album, duration, path_mp3, icon, position in tracks:  # ADDED icon
+            for track_id, title, artist, album, duration, path_mp3, icon, position in tracks:
                 track_model = TrackModel(
                     track_id=str(track_id),
                     title=title,
@@ -287,16 +332,19 @@ class MusicManager:
                     album=album or "",
                     duration=duration or 0,
                     file_path=path_mp3 or "",
-                    image_path=icon or "",  # Map DB 'icon' to model 'image_path'
+                    image_path=icon or "",
                     position=position,
                 )
                 track_models.append(track_model)
+
+            # Close connection
+            conn.close()
 
             return PlaylistModel(
                 playlist_id=str(playlist_id_db), 
                 name=playlist_name, 
                 tracks=track_models,
-                icon=playlist_icon or ""  # ADD playlist icon
+                icon=playlist_icon or ""
             )
         except Exception as e:
             print(f"Error getting playlist: {e}")
@@ -307,12 +355,12 @@ class MusicManager:
         cursor = conn.cursor()
 
         # Get playlist WITH icon
-        cursor.execute("SELECT id, name, icon FROM playlists")  # ADDED icon
+        cursor.execute("SELECT id, name, icon FROM playlists")
         playlists = cursor.fetchall()
 
         playlist_models: List[PlaylistModel] = []
 
-        for playlist_id, playlist_name, playlist_icon in playlists:  # ADDED icon
+        for playlist_id, playlist_name, playlist_icon in playlists:
             cursor.execute("""
                 SELECT t.id, t.title, t.artist, t.album, t.duration, 
                        t.path_mp3, t.icon, pt.position
@@ -342,9 +390,12 @@ class MusicManager:
                 playlist_id=str(playlist_id), 
                 name=playlist_name, 
                 tracks=track_models,
-                icon=playlist_icon or ""  # ADD playlist icon
+                icon=playlist_icon or ""
             )
             playlist_models.append(playlist_model)
+
+        # Close connection
+        conn.close()
 
         return playlist_models
 
@@ -374,6 +425,8 @@ class MusicManager:
             )
 
         result = cursor.fetchone()
+        conn.close()
+        
         return str(result[0]) if result else None
 
     def get_playlist_id(self, name: str) -> Optional[str]:
@@ -383,6 +436,7 @@ class MusicManager:
 
         cursor.execute("SELECT id FROM playlists WHERE name = ?", (name,))
         result = cursor.fetchone()
+        conn.close()
 
         return str(result[0]) if result else None
 
@@ -393,5 +447,6 @@ class MusicManager:
 
         cursor.execute("SELECT id, name FROM playlists")
         results = cursor.fetchall()
+        conn.close()
 
         return {name: str(pid) for pid, name in results}
