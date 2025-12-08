@@ -33,7 +33,8 @@ copyright = "Copyright (C) 2025 by Zenith"
 [tool.flet.app]
 path = "src"
 module = "main"
-icon = "assets/icon.png"
+icon = "src/assets/logo.png"
+assets = ["src/assets"]
 
 [tool.uv]
 dev-dependencies = [
