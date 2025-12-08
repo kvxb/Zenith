@@ -1,10 +1,20 @@
-import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 import sys
+import io
 import traceback
 import os
+
+# Check if we are on Windows and if the encoding needs fixing
+if sys.platform.startswith("win"):
+    try:
+        # Force the standard output and standard error streams to use UTF-8
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace"
+        )
+    except Exception:
+        pass  # If wrapping fails, continue anyway
 
 print("Starting Zenith app...", flush=True)
 print(f"FLET_PLATFORM: {os.environ.get('FLET_PLATFORM', 'not set')}", flush=True)
