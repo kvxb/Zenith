@@ -13,6 +13,7 @@ from backend.music_manager import MusicManager
 def main(page: ft.Page):
     page.title = "Zenith"
 
+    page.theme_mode = ft.ThemeMode.DARK
     # page.theme = ft.Theme(color_scheme_seed=ft.Colors.CYAN_100)
 
     music_manager = MusicManager()
