@@ -11,20 +11,30 @@ class SimpleMusicDB:
     def __init__(self, db_path: Optional[str] = None):
         """
         Initialize database connection.
-        
+
         Args:
-            db_path: Path to the SQLite database file. 
-                    If None, uses "playlists_songs.db" in current directory.
+            db_path: Path to the SQLite database file.
+                    If None, uses app storage data directory or current directory.
         """
         if db_path is None:
-            self.db_path = "playlists_songs.db"
+            # Use Flet's app storage directory if available
+            storage_dir = os.getenv("FLET_APP_STORAGE_DATA")
+            if storage_dir:
+                os.makedirs(storage_dir, exist_ok=True)
+                self.db_path = os.path.join(storage_dir, "playlists_songs.db")
+            else:
+                self.db_path = "playlists_songs.db"
         else:
+            # Ensure parent directory exists
+            parent_dir = os.path.dirname(db_path)
+            if parent_dir:
+                os.makedirs(parent_dir, exist_ok=True)
             self.db_path = db_path
-            
+
         # Lock pentru a preveni accesul concurent la database
         self.db_lock = threading.Lock()
         self._ensure_tables_exist()
-        
+
         print(f"🗃️  Database initialized: {self.db_path}")
 
     def _ensure_tables_exist(self):
@@ -78,7 +88,9 @@ class SimpleMusicDB:
         """
         )
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_position ON playlist_tracks(playlist_id, position)")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_position ON playlist_tracks(playlist_id, position)"
+        )
 
         cursor.execute(
             """
@@ -193,14 +205,16 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
+
             # Get track duration and position
             cursor.execute("SELECT duration FROM tracks WHERE id = ?", (track_id,))
             duration_result = cursor.fetchone()
             duration = duration_result[0] if duration_result else 0
-            
-            cursor.execute("SELECT position FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?", 
-                           (playlist_id, track_id))
+
+            cursor.execute(
+                "SELECT position FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
+                (playlist_id, track_id),
+            )
             position_result = cursor.fetchone()
             old_position = position_result[0] if position_result else 0
 
@@ -211,11 +225,14 @@ class SimpleMusicDB:
             )
 
             # Reorder remaining tracks (shift positions up)
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE playlist_tracks 
                 SET position = position - 1 
                 WHERE playlist_id = ? AND position > ?
-            """, (playlist_id, old_position))
+            """,
+                (playlist_id, old_position),
+            )
 
             # Update playlist stats
             cursor.execute(
@@ -242,14 +259,14 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
+
             try:
                 for position, track_id in enumerate(new_order, 1):
                     cursor.execute(
                         "UPDATE playlist_tracks SET position = ? WHERE playlist_id = ? AND track_id = ?",
-                        (position, playlist_id, track_id)
+                        (position, playlist_id, track_id),
                     )
-                
+
                 conn.commit()
                 conn.close()
                 return True
@@ -280,8 +297,15 @@ class SimpleMusicDB:
 
             return updated
 
-    def add_track_to_playlist(self, playlist_id: int, title: str, artist: str, 
-                             album: str, duration: int, icon: Optional[str]) -> int:
+    def add_track_to_playlist(
+        self,
+        playlist_id: int,
+        title: str,
+        artist: str,
+        album: str,
+        duration: int,
+        icon: Optional[str],
+    ) -> int:
         """Add a track to a playlist."""
         with self.db_lock:
             conn = self._get_connection()
@@ -290,7 +314,7 @@ class SimpleMusicDB:
             # Check if track exists in tracks table
             cursor.execute(
                 "SELECT id FROM tracks WHERE title = ? AND artist = ? AND album = ?",
-                (title, artist, album)
+                (title, artist, album),
             )
             existing_track = cursor.fetchone()
 
@@ -302,16 +326,20 @@ class SimpleMusicDB:
                     (playlist_id, track_id),
                 )
                 if cursor.fetchone():
-                    print(f"Track '{title}' by '{artist}' is already in playlist {playlist_id}")
+                    print(
+                        f"Track '{title}' by '{artist}' is already in playlist {playlist_id}"
+                    )
                     conn.close()
                     return track_id
-                
+
                 # Track exists in database but NOT in this playlist
                 cursor.execute(
                     "UPDATE tracks SET reference_count = reference_count + 1 WHERE id = ?",
-                    (track_id,)
+                    (track_id,),
                 )
-                print(f"Track '{title}' exists, added to another playlist (ref count++)")
+                print(
+                    f"Track '{title}' exists, added to another playlist (ref count++)"
+                )
             else:
                 # Track doesn't exist in database at all
                 cursor.execute(
@@ -322,7 +350,9 @@ class SimpleMusicDB:
                 print(f"Created new track '{title}' (ref count = 1)")
 
             # Get current song count BEFORE updating (for position)
-            cursor.execute("SELECT song_count FROM playlists WHERE id = ?", (playlist_id,))
+            cursor.execute(
+                "SELECT song_count FROM playlists WHERE id = ?", (playlist_id,)
+            )
             result = cursor.fetchone()
             current_count = result[0] if result else 0
 
@@ -383,7 +413,8 @@ class SimpleMusicDB:
             cursor = conn.cursor()
 
             cursor.execute(
-                "SELECT track_id FROM playlist_tracks WHERE playlist_id = ?", (playlist_id,)
+                "SELECT track_id FROM playlist_tracks WHERE playlist_id = ?",
+                (playlist_id,),
             )
             track_ids = [row[0] for row in cursor.fetchall()]
 
@@ -423,7 +454,9 @@ class SimpleMusicDB:
             track_ids = [track[0] for track in unused_tracks]
             placeholders = ",".join("?" for _ in track_ids)
 
-            cursor.execute(f"DELETE FROM tracks WHERE id IN ({placeholders})", track_ids)
+            cursor.execute(
+                f"DELETE FROM tracks WHERE id IN ({placeholders})", track_ids
+            )
 
             deleted_count = cursor.rowcount
             conn.commit()
@@ -440,23 +473,23 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
+
             cursor.execute("SELECT COUNT(*) FROM tracks")
             track_count = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM playlists")
             playlist_count = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM metadata")
             metadata_count = cursor.fetchone()[0]
-            
+
             conn.close()
-            
+
             return {
                 "db_path": self.db_path,
                 "track_count": track_count,
                 "playlist_count": playlist_count,
-                "metadata_count": metadata_count
+                "metadata_count": metadata_count,
             }
 
     # Additional helper methods for IconDownloader and other components
@@ -466,27 +499,31 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 SELECT DISTINCT icon 
                 FROM tracks 
                 WHERE icon IS NOT NULL 
                 AND icon != '' 
                 AND icon LIKE 'http%'
-            """)
+            """
+            )
             track_icons = [row[0] for row in cursor.fetchall()]
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 SELECT DISTINCT icon 
                 FROM playlists 
                 WHERE icon IS NOT NULL 
                 AND icon != '' 
                 AND icon LIKE 'http%'
-            """)
+            """
+            )
             playlist_icons = [row[0] for row in cursor.fetchall()]
-            
+
             conn.close()
-            
+
             return list(set(track_icons + playlist_icons))
 
     def update_icon_path(self, old_url: str, new_path: str) -> bool:
@@ -494,19 +531,17 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
+
             # Update tracks
             cursor.execute(
-                "UPDATE tracks SET icon = ? WHERE icon = ?",
-                (new_path, old_url)
+                "UPDATE tracks SET icon = ? WHERE icon = ?", (new_path, old_url)
             )
-            
+
             # Update playlists
             cursor.execute(
-                "UPDATE playlists SET icon = ? WHERE icon = ?",
-                (new_path, old_url)
+                "UPDATE playlists SET icon = ? WHERE icon = ?", (new_path, old_url)
             )
-            
+
             conn.commit()
             conn.close()
             return True
@@ -516,12 +551,15 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 SELECT id, title, artist, album, duration, path_mp3, icon
                 FROM tracks WHERE id = ?
-            """, (track_id,))
-            
+            """,
+                (track_id,),
+            )
+
             result = cursor.fetchone()
             conn.close()
             return result
@@ -531,33 +569,38 @@ class SimpleMusicDB:
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 SELECT id, title, artist 
                 FROM tracks 
                 WHERE path_mp3 IS NULL OR path_mp3 = ''
-            """)
-            
+            """
+            )
+
             results = cursor.fetchall()
             conn.close()
             return results
 
-    def update_track_path(self, track_id: int, full_file_path: str, duration: int) -> bool:
+    def update_track_path(
+        self, track_id: int, full_file_path: str, duration: int
+    ) -> bool:
         """Update track file path and duration."""
         with self.db_lock:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
+
             # Extract just the filename for display purposes if needed
             # But store the full path in database
             file_name = Path(full_file_path).name
-            
+
             cursor.execute(
-                "UPDATE tracks SET path_mp3 = ?, duration = ? WHERE id = ?", 
-                (full_file_path, duration, track_id)  # Store FULL path
+                "UPDATE tracks SET path_mp3 = ?, duration = ? WHERE id = ?",
+                (full_file_path, duration, track_id),  # Store FULL path
             )
-            
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 UPDATE playlists 
                 SET total_duration = total_duration + ? 
                 WHERE id IN (
@@ -565,8 +608,10 @@ class SimpleMusicDB:
                     FROM playlist_tracks 
                     WHERE track_id = ?
                 )
-            """, (duration, track_id))
-            
+            """,
+                (duration, track_id),
+            )
+
             conn.commit()
             conn.close()
             return True
