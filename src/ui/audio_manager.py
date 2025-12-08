@@ -6,7 +6,7 @@ from enum import Enum
 class AudioManager:
     def __init__(self):
         self.audio = ft.Audio(
-            src="Twenty One Pilots - Stressed Out.mp3",
+            src="default.mp3",
             autoplay=False,
             volume=1.0,
             on_state_changed=self._on_state_change,

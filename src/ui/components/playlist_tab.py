@@ -30,6 +30,18 @@ class PlaylistTabArea(ft.Container):
         )
         return ft.Row(
             controls=[
+                ft.Container(
+                    content=ft.Image(
+                        src="logo.png",
+                        width=48,
+                        height=48,
+                        fit=ft.ImageFit.COVER,
+                    ),
+                    width=48,
+                    height=48,
+                    border_radius=4,
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                ),
                 self.library_name_field,
                 ft.PopupMenuButton(
                     items=[
