@@ -3,30 +3,30 @@ name: Build and Package Flet App (.deb)
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
-jobs:
-  build_deb:
+jobs: # <--- MUST be at the top level
+  build_deb: # <--- MUST be indented by 2 spaces relative to 'jobs'
     runs-on: ubuntu-latest
-    env:
+    env: # <--- Indented by 4 spaces
       # --- Define Variables Here ---
       APP_NAME: zenith
       APP_DIR: debian_package
-      APP_SHARE_PATH: debian_package/usr/share/zenith 
+      APP_SHARE_PATH: debian_package/usr/share/zenith
       APP_BIN_PATH: /usr/bin/zenith
-      
-    steps:
-      - name: ⬇️ Checkout Repository
+
+    steps: # <--- Indented by 4 spaces
+      - name: ⬇️ Checkout Repository # <--- Indented by 6 spaces
         uses: actions/checkout@v4
 
       # --- Setup & Dependencies ---
       - name: 🐍 Set up Python and Install Dependencies
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
       - run: pip install -r requirements.txt flet
-        
+
       - name: 🛠️ Install Build Tools and Runtime Libraries
         run: |
           sudo apt-get update
@@ -47,9 +47,8 @@ jobs:
           # 1. Create the necessary FHS directory structure in the staging area
           mkdir -p $APP_DIR/DEBIAN $APP_DIR/usr/bin $APP_DIR/usr/share/applications \
             $APP_DIR/usr/share/icons/hicolor/1024x1024/apps/ $APP_SHARE_PATH
-          
+
           # 2. Copy Static Assets from repo into their final FHS locations
-          # Assuming icon is zenith-icon-1024.png and is located in packaging_assets/
           cp packaging_assets/zenith-icon-1024.png $APP_DIR/usr/share/icons/hicolor/1024x1024/apps/$APP_NAME.png
 
           # 3. Clean and Copy Flet Runtime
@@ -61,48 +60,48 @@ jobs:
           VERSION="${{ github.ref_name }}"
           INSTALLED_SIZE=$(du -ks $APP_DIR/usr | awk '{print $1}')
           APP_SHARE_PATH_FHS="/usr/share/$APP_NAME"
-          
+
           # --- 1. Control File (Dynamically Generated) ---
           cat <<EOF > $APP_DIR/DEBIAN/control
-Package: $APP_NAME
-Version: $VERSION
-Section: multimedia
-Priority: optional
-Architecture: amd64
-Maintainer: Your Name <you@example.com>
-Installed-Size: $INSTALLED_SIZE
-Depends: ffmpeg, mpv, libmpv2, libgtk-3-0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, gstreamer1.0-plugins-good, gstreamer1.0-plugins-ugly, gstreamer1.0-libav, gstreamer1.0-pulseaudio
-Description: Zenith Music Player - Built with Flet.
- A portable music player using the powerful Flet framework.
-EOF
-          
+          Package: $APP_NAME
+          Version: $VERSION
+          Section: multimedia
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Your Name <you@example.com>
+          Installed-Size: $INSTALLED_SIZE
+          Depends: ffmpeg, mpv, libmpv2, libgtk-3-0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, gstreamer1.0-plugins-good, gstreamer1.0-plugins-ugly, gstreamer1.0-libav, gstreamer1.0-pulseaudio
+          Description: Zenith Music Player - Built with Flet.
+           A portable music player using the powerful Flet framework.
+          EOF
+
           # --- 2. Desktop File (Dynamically Generated) ---
           cat <<EOF > $APP_DIR/usr/share/applications/${APP_NAME}.desktop
-[Desktop Entry]
-Name=Zenith Music Player
-Comment=A modern music player built with Flet
-Exec=$APP_BIN_PATH
-Terminal=false
-Type=Application
-Icon=$APP_NAME
-Categories=AudioVideo;Player;
-EOF
-          
+          [Desktop Entry]
+          Name=Zenith Music Player
+          Comment=A modern music player built with Flet
+          Exec=$APP_BIN_PATH
+          Terminal=false
+          Type=Application
+          Icon=$APP_NAME
+          Categories=AudioVideo;Player;
+          EOF
+
           # --- 3. Launch Wrapper Script (CWD Fix) ---
           cat <<EOF > $APP_DIR$APP_BIN_PATH
-#!/bin/bash
-APP_ROOT="$APP_SHARE_PATH_FHS"
-cd "$APP_ROOT"
-exec ./$APP_NAME "\$@"
-EOF
+          #!/bin/bash
+          APP_ROOT="$APP_SHARE_PATH_FHS"
+          cd "$APP_ROOT"
+          exec ./$APP_NAME "$$@"
+          EOF
           chmod 755 $APP_DIR$APP_BIN_PATH
-          
+
           # --- 4. Post-Installation Script ---
           cat <<EOF > $APP_DIR/DEBIAN/postinst
-#!/bin/sh
-update-desktop-database /usr/share/applications/
-gtk-update-icon-cache -f /usr/share/icons/hicolor || true
-EOF
+          #!/bin/sh
+          update-desktop-database /usr/share/applications/
+          gtk-update-icon-cache -f /usr/share/icons/hicolor || true
+          EOF
           chmod 755 $APP_DIR/DEBIAN/postinst
 
       - name: 📦 Build Final .deb Package and Upload
