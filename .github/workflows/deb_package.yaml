@@ -3,7 +3,7 @@ name: Build and Package Flet App (.deb)
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       APP_DIR: debian_package
       APP_SHARE_PATH: debian_package/usr/share/zenith
       APP_BIN_PATH: /usr/bin/zenith
-      
+
     steps:
       - name: ⬇️ Checkout Repository
         uses: actions/checkout@v4
@@ -24,15 +24,20 @@ jobs:
       - name: 🐍 Set up Python and Install Dependencies
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
       - run: pip install -r requirements.txt flet
-      
+
       - name: 🛠️ Install Build Tools and Runtime Libraries
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build clang \
-            libgtk-3-dev mpv libmpv2 ffmpeg \
-            libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-pulseaudio
+          libgtk-3-dev \
+          # --- Development Libraries (Fixes the CMake pkg-config error) ---
+          libgstreamer1.0-dev \
+          libgstreamer-plugins-base1.0-dev \
+          # --- Runtime Libraries (Required for execution/testing on the CI runner) ---
+          mpv libmpv2 ffmpeg \
+          libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-pulseaudio
 
       # --- Build Flet Application ---
       - name: 🏗️ Build Flet Linux Runner
@@ -43,7 +48,7 @@ jobs:
         run: |
           # 1. Create the top-level staging directory
           mkdir -p $APP_DIR
-          
+
           # 2. COPY ENTIRE STATIC ASSET STRUCTURE from repo
           cp -r packaging_assets/. $APP_DIR/
 
@@ -57,7 +62,7 @@ jobs:
           # Calculate Installed-Size
           INSTALLED_SIZE=$(du -ks $APP_DIR/usr | awk '{print $1}')
           APP_SHARE_PATH_FHS="/usr/share/$APP_NAME"
-          
+
           # --- 1. Control File (Dynamically Generated) ---
           cat <<EOF > $APP_DIR/DEBIAN/control
           Package: $APP_NAME
@@ -71,7 +76,7 @@ jobs:
           Description: Zenith Music Player - Built with Flet.
            A portable music player using the powerful Flet framework.
           EOF
-          
+
           # --- 2. Desktop File (Dynamically Generated) ---
           cat <<EOF > $APP_DIR/usr/share/applications/${APP_NAME}.desktop
           [Desktop Entry]
@@ -83,7 +88,7 @@ jobs:
           Icon=$APP_NAME
           Categories=AudioVideo;Player;
           EOF
-          
+
           # --- 3. Launch Wrapper Script (CWD Fix) ---
           cat <<EOF > $APP_DIR$APP_BIN_PATH
           #!/bin/bash
