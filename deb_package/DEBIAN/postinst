@@ -1,0 +1,6 @@
+#!/bin/sh
+# Update the desktop file cache so the app shows up immediately in menus
+update-desktop-database /usr/share/applications/
+
+# Update the icon cache for your specific icon (if you placed a custom one)
+gtk-update-icon-cache -f /usr/share/icons/hicolor

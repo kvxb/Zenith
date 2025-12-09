@@ -1,0 +1,8 @@
+Package: zenith-music-player
+Version: 0.1.0
+Section: sound
+Priority: optional
+Architecture: amd64
+Depends: mpv, libmpv2, ffmpeg, libgtk-3-0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, gstreamer1.0-plugins-good, gstreamer1.0-plugins-ugly, gstreamer1.0-libav, gstreamer1.0-pulseaudio
+Maintainer: Zenith <you@example.com>
+Description: A modern music player built with Flet

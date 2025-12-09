@@ -1,0 +1,4 @@
+#!/bin/bash
+# Pre-removal script for Zenith Music Player
+# (Add any cleanup steps here)
+exit 0
