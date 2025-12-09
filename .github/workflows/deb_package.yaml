@@ -44,13 +44,6 @@ jobs: # <--- MUST be at the top level
       # --- Package Creation Section ---
       - name: 📂 Prepare .deb Staging Directory
         run: |
-          # 1. Create the necessary FHS directory structure in the staging area
-          mkdir -p $APP_DIR/DEBIAN $APP_DIR/usr/bin $APP_DIR/usr/share/applications \
-            $APP_DIR/usr/share/icons/hicolor/1024x1024/apps/ $APP_SHARE_PATH
-
-          # 2. Copy Static Assets from repo into their final FHS locations
-          cp packaging_assets/zenith-icon-1024.png $APP_DIR/usr/share/icons/hicolor/1024x1024/apps/$APP_NAME.png
-
           # 3. Clean and Copy Flet Runtime
           rm -rf $APP_SHARE_PATH/*
           cp -r build/linux/. $APP_SHARE_PATH/
