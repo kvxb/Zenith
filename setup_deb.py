@@ -5,7 +5,7 @@ import sys
 
 # Configuration
 APP_NAME = "zenith"
-PACKAGE_DIR = "deb_template"
+PACKAGE_DIR = "debian_package"
 APP_SHARE_PATH = os.path.join(PACKAGE_DIR, "usr/share/zenith")
 APP_BIN_PATH = os.path.join(PACKAGE_DIR, "usr/bin/zenith")
 DESKTOP_FILE_PATH = os.path.join(PACKAGE_DIR, "usr/share/applications/zenith.desktop")
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if part == "target-path":
-        print(APP_BIN_PATH)
+        print(APP_SHARE_PATH)
         sys.exit(0)
 
     if part == "package-dir":
