@@ -44,11 +44,14 @@ jobs: # <--- MUST be at the top level
       # --- Package Creation Section ---
       - name: 📂 Prepare .deb Staging Directory
         run: |
-          # 3. Clean and Copy Flet Runtime
+          # 1. Copy the entire debian_package folder structure to staging
+          mkdir -p $APP_DIR
+          cp -r deb_package/. $APP_DIR/
+
+          # 2. Clean and Copy Flet Runtime
           rm -rf $APP_SHARE_PATH/*
           mkdir -p $APP_SHARE_PATH
           cp -r build/linux/. $APP_SHARE_PATH/
-
       - name: 📝 Create Control, Desktop, and Maintainer Scripts
         run: |
           VERSION="${{ github.ref_name }}"
