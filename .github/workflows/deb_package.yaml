@@ -3,7 +3,7 @@ name: Build and Package Flet App (.deb)
 on:
   push:
     tags:
-      - "v*"
+      - "[0-9]*"
   workflow_dispatch:
 
 jobs: # <--- MUST be at the top level
