@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Zenith Music Player
+Comment=Zenith Music Player is a portable music player built using the Flet framework.
+Exec=/usr/bin/zenith
+Terminal=false
+Type=Application
+Icon=zenith
+Categories=AudioVideo;Player;

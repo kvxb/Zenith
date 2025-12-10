@@ -3,4 +3,4 @@
 cd "/usr/share/zenith/"
 
 # 2. Execute the runner from this correct directory
-exec ./zenith_music_player "$@"
+exec ./zenith "$@"
