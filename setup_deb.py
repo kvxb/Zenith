@@ -5,7 +5,7 @@ import sys
 
 # Configuration
 APP_NAME = "zenith"
-PACKAGE_DIR = "debian_package"
+PACKAGE_DIR = "deb_template"
 APP_SHARE_PATH = os.path.join(PACKAGE_DIR, "usr/share/zenith")
 APP_BIN_PATH = os.path.join(PACKAGE_DIR, "usr/bin/zenith")
 DESKTOP_FILE_PATH = os.path.join(PACKAGE_DIR, "usr/share/applications/zenith.desktop")

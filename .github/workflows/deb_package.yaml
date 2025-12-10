@@ -41,7 +41,7 @@ jobs:
           APP_BIN_PATH=$(python3 setup_deb.py target-path | tr -d '\n')
           PACKAGE_FILE_NAME=$(python3 setup_deb.py package-file-name ${{ github.ref_name }} | tr -d '\n')
           PACKAGE_DIR=$(python3 setup_deb.py package-dir | tr -d '\n')
-          APP_NAME=$(python3 setup_deb.py app-name | tr -d '\n
+          APP_NAME=$(python3 setup_deb.py app-name | tr -d '\n')
 
           dpkg-deb --build $PACKAGE_DIR
           mv ${PACKAGE_DIR}.deb ${APP_NAME}_${{ github.ref_name }}_amd64.deb
