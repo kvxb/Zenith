@@ -22,7 +22,7 @@ org = "com.zenith"
 
 # project display name that is used as an app title on Android and iOS home screens,
 # shown in window titles and about app dialogs on desktop.
-product = "Zenith Music Player"
+product = "Zenith"
 
 # company name to display in about app dialogs
 company = "Zenith"

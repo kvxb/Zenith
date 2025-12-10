@@ -15,6 +15,7 @@ jobs: # <--- MUST be at the top level
       APP_DIR: debian_package
       APP_SHARE_PATH: debian_package/usr/share/zenith
       APP_BIN_PATH: /usr/bin/zenith
+      APP_SHARE_PATH_FHS: "/usr/share/$APP_NAME"
 
     steps: # <--- Indented by 4 spaces
       - name: ⬇️ Checkout Repository # <--- Indented by 6 spaces
@@ -56,7 +57,6 @@ jobs: # <--- MUST be at the top level
         run: |
           VERSION="${{ github.ref_name }}"
           INSTALLED_SIZE=$(du -ks $APP_DIR/usr | awk '{print $1}')
-          APP_SHARE_PATH_FHS="/usr/share/$APP_NAME"
 
           # --- 1. Control File (Dynamically Generated) ---
           cat <<EOF > $APP_DIR/DEBIAN/control
