@@ -15,8 +15,7 @@ jobs:
       APP_DIR: debian_package
       APP_SHARE_PATH: debian_package/usr/share/zenith
       APP_BIN_PATH: /usr/bin/zenith
-      # CRITICAL FIX 1: Use ${{ env.APP_NAME }} to force evaluation of APP_NAME immediately
-      APP_SHARE_PATH_FHS: /usr/share/${{ env.APP_NAME }}
+      APP_SHARE_PATH_FHS: /usr/share/zenith
 
     steps:
       - name: ⬇️ Checkout Repository
@@ -111,10 +110,16 @@ jobs:
           EOF
           chmod 755 $APP_DIR/DEBIAN/postinst
 
-      - name: 📦 Build Final .deb Package and Upload
+      - name: 📦 Build Final .deb Package
         run: |
           dpkg-deb --build $APP_DIR
           mv ${APP_DIR}.deb ${APP_NAME}_${{ github.ref_name }}_amd64.deb
+
+      - name: 🧪 Install and Smoke Test .deb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ./${APP_NAME}_${{ github.ref_name }}_amd64.deb || (cat /var/lib/dpkg/status && exit 1)
+          timeout 20s zenith || true
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
