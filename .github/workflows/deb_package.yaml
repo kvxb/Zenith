@@ -46,6 +46,7 @@ jobs: # <--- MUST be at the top level
         run: |
           # 3. Clean and Copy Flet Runtime
           rm -rf $APP_SHARE_PATH/*
+          mkdir -p $APP_SHARE_PATH
           cp -r build/linux/. $APP_SHARE_PATH/
 
       - name: 📝 Create Control, Desktop, and Maintainer Scripts
