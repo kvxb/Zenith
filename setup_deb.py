@@ -92,15 +92,18 @@ Categories=AudioVideo;Player;
 
 
 def write_startup_script():
-    startup_script_path = os.path.join(PACKAGE_DIR, "usr/bin", APP_NAME)
+    startup_bin_dir = os.path.join(PACKAGE_DIR, "usr/bin")
+    os.makedirs(startup_bin_dir, exist_ok=True)
+    startup_script_path = os.path.join(startup_bin_dir, APP_NAME)
+
     with open(startup_script_path, "w") as f:
         f.write(
             f"""#!/bin/sh
 cd {EXEC_LOCATION}
 exec ./{APP_NAME} "$@"
-"""
+    """
         )
-    os.chmod(startup_script_path, 0o755)
+        os.chmod(startup_script_path, 0o755)
 
 
 # Example: Write a minimal postinst script
@@ -178,9 +181,9 @@ if __name__ == "__main__":
             data,
             subprocess.getoutput(f"du -s {os.path.join(PACKAGE_DIR, 'usr')} | cut -f1"),
         )
+        write_startup_script()
         write_desktop()
         write_postinst()
-        write_startup_script()
         print("Debian package config files generated.")
         sys.exit(0)
 
