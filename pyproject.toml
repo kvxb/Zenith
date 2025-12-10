@@ -1,6 +1,6 @@
 [project]
-name = "zenith-music-player"
-version = "12"
+name = "zenith"
+version = "0.2"
 description = "Zenith Music Player is a portable music player built using the Flet framework."
 readme = "README.md"
 requires-python = ">=3.9"

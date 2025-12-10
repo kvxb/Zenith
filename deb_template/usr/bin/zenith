@@ -1,4 +1,4 @@
 #!/bin/sh
-cd /usr/bin/zenith
+cd /usr/share/zenith
 exec ./zenith "$@"
     

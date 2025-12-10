@@ -12,7 +12,7 @@ DESKTOP_FILE_PATH = os.path.join(PACKAGE_DIR, "usr/share/applications/zenith.des
 DEBIAN_DIR = os.path.join(PACKAGE_DIR, "DEBIAN")
 CONTROL_FILE_PATH = os.path.join(DEBIAN_DIR, "control")
 POSTINST_FILE_PATH = os.path.join(DEBIAN_DIR, "postinst")
-EXEC_LOCATION = "/usr/bin/zenith"
+EXEC_LOCATION = "/usr/share/zenith"
 
 DESCRIPTION = (
     "Zenith Music Player is a portable music player built using the Flet framework."
@@ -21,7 +21,7 @@ DESCRIPTION = (
 DEPENDENCIES = [
     "ffmpeg",
     "mpv",
-    "libmpv1",
+    "libmpv2",
     "libgtk-3-0",
     "libgstreamer1.0-0",
     "libgstreamer-plugins-base1.0-0",
@@ -128,7 +128,7 @@ def write_project_toml(version):
     with open("pyproject.toml", "w") as f:
         f.write(
             f"""[project]
-name = "{APP_NAME}-music-player"
+name = "{APP_NAME}"
 version = "{version}"
 description = "{DESCRIPTION}"
 readme = "README.md"
