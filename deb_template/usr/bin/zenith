@@ -1,6 +1,4 @@
-#!/bin/bash
-# 1. Change the CWD to the application's installed folder (where data/ and lib/ are)
-cd "/usr/share/zenith/"
-
-# 2. Execute the runner from this correct directory
+#!/bin/sh
+cd /usr/bin/zenith
 exec ./zenith "$@"
+    
