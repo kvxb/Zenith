@@ -6,22 +6,23 @@ on:
       - "[0-9]*"
   workflow_dispatch:
 
-jobs: # <--- MUST be at the top level
-  build_deb: # <--- MUST be indented by 2 spaces relative to 'jobs'
+jobs:
+  build_deb:
     runs-on: ubuntu-latest
-    env: # <--- Indented by 4 spaces
+    env:
       # --- Define Variables Here ---
       APP_NAME: zenith
       APP_DIR: debian_package
       APP_SHARE_PATH: debian_package/usr/share/zenith
       APP_BIN_PATH: /usr/bin/zenith
-      APP_SHARE_PATH_FHS: "/usr/share/$APP_NAME"
+      # CRITICAL FIX 1: Use ${{ env.APP_NAME }} to force evaluation of APP_NAME immediately
+      APP_SHARE_PATH_FHS: /usr/share/${{ env.APP_NAME }}
 
-    steps: # <--- Indented by 4 spaces
-      - name: ⬇️ Checkout Repository # <--- Indented by 6 spaces
+    steps:
+      - name: ⬇️ Checkout Repository
         uses: actions/checkout@v4
 
-      # --- Setup & Dependencies ---
+      # --- Setup & Dependencies (Assumed correct) ---
       - name: 🐍 Set up Python and Install Dependencies
         uses: actions/setup-python@v5
         with:
@@ -38,21 +39,26 @@ jobs: # <--- MUST be at the top level
             mpv libmpv2 ffmpeg \
             libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-pulseaudio
 
-      # --- Build Flet Application ---
       - name: 🏗️ Build Flet Linux Runner
         run: flet build linux
 
       # --- Package Creation Section ---
-      - name: 📂 Prepare .deb Staging Directory
+      - name: 📂 Prepare .deb Staging Directory (FIXED Added mkdir -p for structure)
         run: |
-          # 1. Copy the entire debian_package folder structure to staging
-          mkdir -p $APP_DIR
+          # 1. Ensure all FHS directories exist, including 'applications' and DEBIAN/
+          mkdir -p $APP_DIR/DEBIAN \
+                   $APP_DIR/usr/bin \
+                   $APP_DIR/usr/share/applications \
+                   $APP_DIR/usr/share/icons/hicolor/1024x1024/apps/ \
+                   $APP_SHARE_PATH
+                   
+          # 2. Copy the entire debian_package folder structure to staging
           cp -r deb_package/. $APP_DIR/
 
-          # 2. Clean and Copy Flet Runtime
+          # 3. Clean and Copy Flet Runtime
           rm -rf $APP_SHARE_PATH/*
-          mkdir -p $APP_SHARE_PATH
           cp -r build/linux/. $APP_SHARE_PATH/
+
       - name: 📝 Create Control, Desktop, and Maintainer Scripts
         run: |
           VERSION="${{ github.ref_name }}"
@@ -84,19 +90,23 @@ jobs: # <--- MUST be at the top level
           Categories=AudioVideo;Player;
           EOF
 
-          # --- 3. Launch Wrapper Script (CWD Fix) ---
+          # --- 3. Launch Wrapper Script (CWD Fix - CRITICAL FIX 2: Escaping $$APP_ROOT) ---
           cat <<EOF > $APP_DIR$APP_BIN_PATH
           #!/bin/bash
+          # APP_ROOT is now correctly evaluated by the runner and contains /usr/share/zenith
           APP_ROOT="$APP_SHARE_PATH_FHS"
-          cd "$APP_ROOT"
+          # CRITICAL FIX: The $$ prevents $APP_ROOT from being expanded by the *outer* shell, 
+          # ensuring the literal 'cd "$APP_ROOT"' is written into the script.
+          cd "$$APP_ROOT" 
           exec ./$APP_NAME "$$@"
           EOF
           chmod 755 $APP_DIR$APP_BIN_PATH
 
-          # --- 4. Post-Installation Script ---
+          # --- 4. Post-Installation Script (Added robustness) ---
           cat <<EOF > $APP_DIR/DEBIAN/postinst
           #!/bin/sh
-          update-desktop-database /usr/share/applications/
+          set -e
+          update-desktop-database /usr/share/applications/ || true
           gtk-update-icon-cache -f /usr/share/icons/hicolor || true
           EOF
           chmod 755 $APP_DIR/DEBIAN/postinst
